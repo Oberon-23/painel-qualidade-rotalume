@@ -1,0 +1,981 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Rotalume Qualidade</title>
+<meta name="description" content="Painel de qualidade de uma indústria fictícia: OEE, CEP, defeitos e ações corretivas.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Onest:wght@400;500;600;700;800&display=swap">
+<style>
+html, body { margin: 0; height: 100%; }
+[hidden] { display: none !important; }
+/* Layout: menu lateral escuro com as guias; área principal com manchete em linguagem simples, 4 indicadores com meta e status, gráficos grandes com 12 meses de contexto e detalhes recolhidos. */
+:root {
+  --bg: #f2f4f6;
+  --surface: #ffffff;
+  --surface-2: #f6f8fa;
+  --ink: #121821;
+  --ink-2: #485260;
+  --muted: #778190;
+  --line: #e1e5ea;
+  --line-2: #eef1f4;
+  --side-bg: #111a24;
+  --side-ink: #e8edf2;
+  --side-muted: #8d9aa8;
+  --side-hover: #1b2733;
+  --accent: var(--a-light);
+  --accent-ink: #ffffff;
+  --accent-soft: var(--a-soft-light);
+  --c1: #2a78d6; --c2: #eb6834; --c3: #1baf7a; --c4: #eda100; --c5: #e87ba4; --c6: #6250d6;
+  --ok: #0b7d3e; --ok-bg: #e2f4e9; --ok-mark: #1a9e55;
+  --warn: #8a5a00; --warn-bg: #fcf0d4; --warn-mark: #e0a00e;
+  --bad: #b3261e; --bad-bg: #fbe5e3; --bad-mark: #d93a30;
+  --seq-1: #e3edfb; --seq-2: #bcd4f5; --seq-3: #8db6ee; --seq-4: #5a93e2; --seq-5: #2f6fc9; --seq-6: #1b4f99;
+  --font: "Onest", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+  --r: 14px;
+  --shadow: 0 1px 2px rgba(16, 24, 40, .04), 0 1px 3px rgba(16, 24, 40, .06);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0c1117; --surface: #141b23; --surface-2: #19222b; --ink: #e7ecf1; --ink-2: #a9b3bf; --muted: #7c8794; --line: #253039; --line-2: #1d272f;
+    --side-bg: #0a0f14; --side-ink: #e7ecf1; --side-muted: #7f8b97; --side-hover: #151e27;
+    --accent: var(--a-dark); --accent-ink: #0b1016; --accent-soft: var(--a-soft-dark);
+    --c1: #3987e5; --c2: #d95926; --c3: #199e70; --c4: #c98500; --c5: #d55181; --c6: #9085e9;
+    --ok: #57c98a; --ok-bg: #14301f; --ok-mark: #3fbf77; --warn: #f0b440; --warn-bg: #352a10; --warn-mark: #e8ad2e; --bad: #f18b84; --bad-bg: #3b1a18; --bad-mark: #e8645b;
+    --seq-1: #16263a; --seq-2: #183a63; --seq-3: #1c528f; --seq-4: #2a6dbf; --seq-5: #4f8fe0; --seq-6: #8dbaf0;
+    --shadow: none;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0c1117; --surface: #141b23; --surface-2: #19222b; --ink: #e7ecf1; --ink-2: #a9b3bf; --muted: #7c8794; --line: #253039; --line-2: #1d272f;
+  --side-bg: #0a0f14; --side-ink: #e7ecf1; --side-muted: #7f8b97; --side-hover: #151e27;
+  --accent: var(--a-dark); --accent-ink: #0b1016; --accent-soft: var(--a-soft-dark);
+  --c1: #3987e5; --c2: #d95926; --c3: #199e70; --c4: #c98500; --c5: #d55181; --c6: #9085e9;
+  --ok: #57c98a; --ok-bg: #14301f; --ok-mark: #3fbf77; --warn: #f0b440; --warn-bg: #352a10; --warn-mark: #e8ad2e; --bad: #f18b84; --bad-bg: #3b1a18; --bad-mark: #e8645b;
+  --seq-1: #16263a; --seq-2: #183a63; --seq-3: #1c528f; --seq-4: #2a6dbf; --seq-5: #4f8fe0; --seq-6: #8dbaf0;
+  --shadow: none;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font-family: var(--font); font-size: 14.5px; line-height: 1.5; -webkit-font-smoothing: antialiased; }
+h1, h2, h3, h4 { margin: 0; text-wrap: balance; letter-spacing: -.01em; }
+p { margin: 0; }
+button, select, input, textarea { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 6px; }
+.mono { font-family: var(--mono); }
+.num { font-variant-numeric: tabular-nums; }
+a { color: var(--accent); }
+
+/* ---------- Estrutura ---------- */
+.app { display: grid; grid-template-columns: 252px minmax(0, 1fr); min-height: 100%; }
+.side { background: var(--side-bg); color: var(--side-ink); position: sticky; top: 0; height: 100vh; display: flex; flex-direction: column; gap: 22px; padding: calc(22px + env(safe-area-inset-top, 0px)) 16px 18px max(16px, env(safe-area-inset-left, 0px)); overflow-y: auto; }
+.brand { display: flex; gap: 11px; align-items: center; padding: 0 6px; }
+.logo { width: 36px; height: 36px; border-radius: 10px; background: var(--accent); display: grid; place-items: center; flex-shrink: 0; }
+.logo svg { width: 20px; height: 20px; }
+.brand b { display: block; font-size: 15px; font-weight: 700; line-height: 1.2; }
+.brand small { display: block; font-size: 11.5px; color: var(--side-muted); }
+.nav { display: flex; flex-direction: column; gap: 3px; }
+.nav-label { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: var(--side-muted); padding: 0 10px 6px; font-weight: 600; }
+.nav button { appearance: none; border: 0; background: none; color: var(--side-ink); text-align: left; padding: 9px 10px; border-radius: 10px; cursor: pointer; display: grid; grid-template-columns: 22px 1fr; gap: 2px 10px; align-items: center; opacity: .78; }
+.nav button svg { width: 19px; height: 19px; grid-row: span 2; }
+.nav button span { font-weight: 600; font-size: 14px; }
+.nav button small { font-size: 11.5px; color: var(--side-muted); line-height: 1.3; }
+.nav button:hover { background: var(--side-hover); opacity: 1; }
+.nav button[aria-current="page"] { background: var(--side-hover); opacity: 1; box-shadow: inset 3px 0 0 var(--accent); }
+.nav button[aria-current="page"] svg { color: var(--accent); }
+.side-foot { margin-top: auto; display: grid; gap: 8px; font-size: 12px; color: var(--side-muted); padding: 0 6px; }
+.side-foot .chip { border-color: #2a3744; color: var(--side-ink); }
+.side-foot a { color: var(--side-ink); }
+
+.main { min-width: 0; display: flex; flex-direction: column; }
+.top { position: sticky; top: 0; z-index: 10; background: color-mix(in srgb, var(--bg) 88%, transparent); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border-bottom: 1px solid var(--line); }
+.top-in { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 10px 20px; padding: calc(14px + env(safe-area-inset-top, 0px)) max(28px, env(safe-area-inset-right, 0px)) 14px 28px; }
+.top h1 { font-size: 21px; font-weight: 700; }
+.top .sub { color: var(--ink-2); font-size: 13.5px; }
+.filters { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.field { display: flex; align-items: center; gap: 6px; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 0 4px 0 10px; box-shadow: var(--shadow); }
+.field label { font-size: 12px; color: var(--muted); font-weight: 600; white-space: nowrap; }
+.field select { border: 0; background-color: var(--surface); color: var(--ink); color-scheme: inherit; padding: 7px 6px; font-size: 13.5px; font-weight: 600; cursor: pointer; max-width: 220px; }
+.field select:focus-visible { outline: none; }
+select option, select optgroup { background-color: var(--surface); color: var(--ink); }
+select option:checked { background-color: var(--accent-soft); color: var(--ink); }
+.field:focus-within { border-color: var(--accent); }
+.content { padding: 22px max(28px, env(safe-area-inset-right, 0px)) 40px 28px; display: flex; flex-direction: column; gap: 18px; max-width: 1360px; width: 100%; }
+.view[hidden] { display: none !important; }
+.view { display: flex; flex-direction: column; gap: 18px; }
+
+/* ---------- Manchete ---------- */
+.headline { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 18px 20px; display: grid; grid-template-columns: 40px minmax(0, 1fr); gap: 14px; align-items: start; box-shadow: var(--shadow); }
+.headline .hi { width: 40px; height: 40px; border-radius: 12px; display: grid; place-items: center; }
+.headline .hi svg { width: 22px; height: 22px; }
+.headline.ok .hi { background: var(--ok-bg); color: var(--ok); }
+.headline.warn .hi { background: var(--warn-bg); color: var(--warn); }
+.headline.bad .hi { background: var(--bad-bg); color: var(--bad); }
+.headline h2 { font-size: 18.5px; font-weight: 650; line-height: 1.35; }
+.headline p { color: var(--ink-2); margin-top: 5px; max-width: 95ch; }
+
+/* ---------- Indicadores ---------- */
+.kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; }
+@media (max-width: 1100px) { .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 520px) { .kpis { grid-template-columns: minmax(0, 1fr); } }
+.kpi { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 16px 16px 12px; display: flex; flex-direction: column; gap: 6px; min-width: 0; box-shadow: var(--shadow); }
+.kpi .k-top { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.kpi .k-lab { font-size: 13px; font-weight: 600; color: var(--ink-2); display: flex; align-items: center; gap: 6px; min-width: 0; }
+.kpi .k-val { font-size: 32px; font-weight: 750; line-height: 1.05; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+.kpi .k-val small { font-size: 16px; font-weight: 600; color: var(--ink-2); margin-left: 2px; letter-spacing: 0; }
+.kpi .k-meta { font-size: 12.5px; color: var(--muted); display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: center; }
+.kpi svg.spark { width: 100%; height: 34px; display: block; margin-top: 2px; }
+
+.status { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 600; padding: 2px 9px 2px 7px; border-radius: 999px; white-space: nowrap; }
+.status::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+.status.ok { background: var(--ok-bg); color: var(--ok); }
+.status.warn { background: var(--warn-bg); color: var(--warn); }
+.status.bad { background: var(--bad-bg); color: var(--bad); }
+.status.neutral { background: var(--surface-2); color: var(--ink-2); border: 1px solid var(--line); }
+.delta { font-family: var(--mono); font-size: 11.5px; }
+.delta.good { color: var(--ok); } .delta.badd { color: var(--bad); } .delta.flat { color: var(--muted); }
+
+/* Explicação (i) */
+.info { position: relative; display: inline-grid; place-items: center; width: 17px; height: 17px; border-radius: 50%; border: 1.4px solid var(--muted); color: var(--muted); font-size: 10.5px; font-weight: 700; font-family: var(--mono); cursor: help; background: none; padding: 0; flex-shrink: 0; }
+.info .tip { position: absolute; right: -10px; top: calc(100% + 8px); width: min(250px, 80vw); display: none; background: var(--ink); color: var(--surface); font-family: var(--font); font-weight: 400; font-size: 12.5px; line-height: 1.45; text-align: left; padding: 9px 11px; border-radius: 9px; z-index: 30; opacity: 0; pointer-events: none; transition: opacity .12s; box-shadow: 0 8px 24px rgba(0,0,0,.18); }
+.info:hover .tip, .info:focus .tip { opacity: 1; display: block; }
+
+/* ---------- Cartões e grade ---------- */
+.grid { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 14px; }
+.s12 { grid-column: span 12; } .s8 { grid-column: span 8; } .s7 { grid-column: span 7; } .s6 { grid-column: span 6; } .s5 { grid-column: span 5; } .s4 { grid-column: span 4; }
+@media (max-width: 1100px) { .s8, .s7, .s6, .s5, .s4 { grid-column: span 12; } }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 18px; display: flex; flex-direction: column; gap: 12px; min-width: 0; box-shadow: var(--shadow); }
+.card-h { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; flex-wrap: wrap; }
+.card h3 { font-size: 15.5px; font-weight: 650; }
+.card .how { font-size: 12.5px; color: var(--muted); margin-top: 3px; max-width: 75ch; }
+.chart { position: relative; height: 300px; width: 100%; }
+.chart.sm { height: 240px; } .chart.lg { height: 340px; }
+@media (max-width: 640px) { .chart, .chart.lg { height: 260px; } }
+.chart-msg { position: absolute; inset: 0; display: grid; place-items: center; color: var(--muted); font-size: 13px; text-align: center; padding: 20px; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 12.5px; color: var(--ink-2); }
+.legend span { display: inline-flex; align-items: center; gap: 7px; }
+.legend i { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
+.legend i.line { height: 3px; border-radius: 2px; width: 16px; }
+.legend i.dash { height: 0; width: 16px; border-top: 2px dashed var(--ink-2); border-radius: 0; }
+.legend i.band { width: 16px; height: 10px; border-radius: 2px; }
+
+/* Lista de achados */
+.finds { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
+.finds li { display: grid; grid-template-columns: 28px minmax(0, 1fr); gap: 10px; align-items: start; }
+.finds .fi { width: 28px; height: 28px; border-radius: 8px; display: grid; place-items: center; }
+.finds .fi svg { width: 16px; height: 16px; }
+.finds .fi.ok { background: var(--ok-bg); color: var(--ok); }
+.finds .fi.warn { background: var(--warn-bg); color: var(--warn); }
+.finds .fi.bad { background: var(--bad-bg); color: var(--bad); }
+.finds .fi.info { background: var(--accent-soft); color: var(--accent); }
+.finds b { font-weight: 650; }
+.finds p { color: var(--ink-2); font-size: 13.5px; }
+.finds p:first-child { color: var(--ink); font-size: 14px; }
+
+/* Tabelas */
+.tscroll { overflow: auto; max-height: 460px; border: 1px solid var(--line); border-radius: 10px; }
+.tscroll.free { max-height: none; }
+table { border-collapse: collapse; width: 100%; font-size: 13.5px; }
+th, td { text-align: left; padding: 9px 12px; border-bottom: 1px solid var(--line-2); vertical-align: middle; }
+th { font-size: 12px; color: var(--muted); font-weight: 600; background: var(--surface-2); position: sticky; top: 0; z-index: 1; white-space: nowrap; }
+td.r, th.r { text-align: right; font-variant-numeric: tabular-nums; }
+tbody tr:last-child td { border-bottom: 0; }
+tbody tr:hover td { background: var(--surface-2); }
+.sortable th { cursor: pointer; user-select: none; }
+.sortable th[aria-sort="ascending"]::after { content: " ↑"; }
+.sortable th[aria-sort="descending"]::after { content: " ↓"; }
+.bar-in { display: inline-block; height: 7px; border-radius: 4px; background: var(--accent); vertical-align: middle; margin-right: 8px; opacity: .85; }
+.meter { width: 84px; height: 7px; border-radius: 4px; background: var(--line-2); display: inline-block; vertical-align: middle; overflow: hidden; margin-right: 8px; }
+.meter i { display: block; height: 100%; border-radius: 4px; }
+.sub-txt { font-size: 12px; color: var(--muted); }
+
+details.more { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); box-shadow: var(--shadow); }
+details.more > summary { cursor: pointer; list-style: none; padding: 14px 18px; font-weight: 650; display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+details.more > summary::-webkit-details-marker { display: none; }
+details.more > summary::after { content: "+"; font-family: var(--mono); font-size: 18px; color: var(--muted); }
+details.more[open] > summary::after { content: "−"; }
+details.more > summary small { font-weight: 400; color: var(--muted); font-size: 12.5px; }
+details.more > .more-in { padding: 0 18px 18px; display: flex; flex-direction: column; gap: 12px; }
+
+/* Controles */
+.seg { display: inline-flex; background: var(--surface-2); border: 1px solid var(--line); border-radius: 10px; padding: 3px; gap: 2px; flex-wrap: wrap; }
+.seg button { border: 0; background: none; padding: 5px 12px; border-radius: 7px; cursor: pointer; font-size: 13px; font-weight: 600; color: var(--ink-2); }
+.seg button[aria-pressed="true"] { background: var(--surface); color: var(--ink); box-shadow: 0 1px 3px rgba(0,0,0,.12); }
+.seg button:hover:not([aria-pressed="true"]) { color: var(--ink); }
+.btn { appearance: none; border: 1px solid var(--line); background: var(--surface); padding: 8px 14px; border-radius: 10px; cursor: pointer; font-weight: 600; font-size: 13.5px; display: inline-flex; gap: 8px; align-items: center; box-shadow: var(--shadow); }
+.btn:hover { border-color: var(--accent); }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.btn.primary:hover { filter: brightness(1.06); }
+.btn:disabled { opacity: .5; cursor: not-allowed; }
+.btn svg { width: 16px; height: 16px; }
+.search { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 8px 12px; width: min(300px, 100%); }
+.row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between; }
+.chip { font-family: var(--mono); font-size: 11.5px; border: 1px solid var(--line); padding: 4px 9px; border-radius: 999px; display: inline-flex; gap: 6px; align-items: center; width: fit-content; }
+.chip .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--warn-mark); }
+.chip.on .dot { background: var(--ok-mark); }
+.pill { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; padding: 1px 9px; border-radius: 999px; white-space: nowrap; font-weight: 550; background: var(--surface-2); color: var(--ink-2); border: 1px solid var(--line); }
+.pill.ok { background: var(--ok-bg); color: var(--ok); border-color: transparent; }
+.pill.warn { background: var(--warn-bg); color: var(--warn); border-color: transparent; }
+.pill.bad { background: var(--bad-bg); color: var(--bad); border-color: transparent; }
+.pill.acc { background: var(--accent-soft); color: var(--accent); border-color: transparent; }
+
+/* Mapa de calor */
+.heat { display: grid; gap: 4px; font-size: 11.5px; }
+.heat .hl { color: var(--muted); display: flex; align-items: center; }
+.heat .hh { color: var(--muted); text-align: center; font-family: var(--mono); font-size: 10.5px; }
+.heat .hc { border-radius: 6px; min-height: 30px; display: grid; place-items: center; font-variant-numeric: tabular-nums; font-weight: 600; font-size: 12px; }
+.scale { display: flex; align-items: center; gap: 8px; font-size: 11.5px; color: var(--muted); }
+.scale .ramp { display: flex; gap: 2px; } .scale .ramp i { width: 18px; height: 8px; border-radius: 2px; }
+
+/* Sobre */
+.prose { display: grid; gap: 10px; color: var(--ink-2); max-width: 78ch; }
+.prose ul { margin: 0; padding-left: 18px; display: grid; gap: 5px; }
+.prose b { color: var(--ink); }
+.formula { font-family: var(--mono); font-size: 12.5px; background: var(--surface-2); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; overflow-x: auto; white-space: pre; color: var(--ink); }
+
+.foot { color: var(--muted); font-size: 12px; padding: 0 28px 28px; }
+
+/* ---------- Celular ---------- */
+@media (max-width: 900px) {
+  .app { grid-template-columns: minmax(0, 1fr); }
+  .side { position: relative; height: auto; padding: calc(14px + env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right, 0px)) 12px max(16px, env(safe-area-inset-left, 0px)); gap: 12px; overflow: visible; }
+  .nav-label, .nav button small, .side-foot { display: none; }
+  .nav { flex-direction: row; overflow-x: auto; scrollbar-width: none; gap: 4px; margin: 0 -4px; }
+  .nav::-webkit-scrollbar { display: none; }
+  .nav button { grid-template-columns: 18px auto; white-space: nowrap; padding: 8px 12px; }
+  .nav button svg { width: 17px; height: 17px; grid-row: auto; }
+  .nav button[aria-current="page"] { box-shadow: inset 0 -3px 0 var(--accent); }
+  .top { position: relative; backdrop-filter: none; }
+  .top-in { padding: 14px max(16px, env(safe-area-inset-right, 0px)) 14px max(16px, env(safe-area-inset-left, 0px)); }
+  .content { padding: 16px max(16px, env(safe-area-inset-right, 0px)) 32px max(16px, env(safe-area-inset-left, 0px)); }
+  .foot { padding: 0 max(16px, env(safe-area-inset-right, 0px)) 24px max(16px, env(safe-area-inset-left, 0px)); }
+  .headline { grid-template-columns: minmax(0, 1fr); }
+  .headline .hi { display: none; }
+  .field select { max-width: 160px; }
+}
+@media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+
+.board { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+@media (max-width: 1000px) { .board { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 520px) { .board { grid-template-columns: minmax(0, 1fr); } }
+.col { background: var(--surface-2); border: 1px solid var(--line); border-radius: 12px; padding: 10px; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.col-h { display: flex; justify-content: space-between; align-items: center; padding: 2px 4px 4px; }
+.col-h b { font-size: 13.5px; display: flex; align-items: center; gap: 8px; }
+.col-h .lt { width: 22px; height: 22px; border-radius: 6px; display: grid; place-items: center; background: var(--accent-soft); color: var(--accent); font-family: var(--mono); font-size: 12px; font-weight: 600; }
+.col-h span { font-size: 12px; color: var(--muted); }
+.nc { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 10px 11px; display: grid; gap: 5px; }
+.nc.late { border-color: var(--bad-mark); box-shadow: inset 3px 0 0 var(--bad-mark); }
+.nc-top { display: flex; justify-content: space-between; gap: 6px; align-items: center; }
+.nc-top .mono { font-size: 11.5px; color: var(--muted); }
+.nc p { font-size: 13px; line-height: 1.35; }
+.nc .nc-meta { font-size: 11.5px; color: var(--muted); display: flex; flex-wrap: wrap; gap: 4px 8px; }
+.empty { font-size: 12.5px; color: var(--muted); padding: 8px 4px; }
+
+</style>
+</head>
+<body>
+<template id="tpl-resumo">
+  <div id="q-head"></div>
+  <div id="q-kpis"></div>
+  <div class="grid">
+    <div class="card s8">
+      <div><h3>A fábrica está eficiente mês a mês?</h3><p class="how">OEE de cada linha. Ele junta três perdas em um número: paradas, lentidão e peças com defeito. A faixa sombreada é o período do filtro.</p></div>
+      <div id="q-oee-leg"></div>
+      <div class="chart lg"><canvas id="q-oee"></canvas></div>
+    </div>
+    <div class="card s4">
+      <h3>O que os dados mostram</h3>
+      <ul id="q-finds"></ul>
+    </div>
+    <div class="card s6">
+      <div><h3>Para onde vai a eficiência?</h3><p class="how">De 100% do tempo planejado, quanto se perde em cada etapa até chegar ao OEE.</p></div>
+      <div class="chart"><canvas id="q-fall"></canvas></div>
+    </div>
+    <div class="card s6">
+      <div><h3>Quanto custa a má qualidade?</h3><p class="how">Peças perdidas (refugo) e peças consertadas (retrabalho), em reais por mês.</p></div>
+      <div id="q-copq-leg"></div>
+      <div class="chart"><canvas id="q-copq"></canvas></div>
+    </div>
+  </div>
+</template>
+
+<template id="tpl-cep">
+  <div id="c-head"></div>
+  <div class="row">
+    <div class="seg" id="c-line" role="group" aria-label="Característica controlada"><button data-v="0">L1 · Diâmetro do eixo</button><button data-v="1">L2 · Torque de aperto</button><button data-v="2">L3 · Espessura da tinta</button></div>
+    <span class="sub-txt" id="c-spec"></span>
+  </div>
+  <div id="c-kpis"></div>
+  <div class="card">
+    <div><h3>O processo está estável?</h3><p class="how">Cada ponto é a média de 5 peças medidas no dia. A faixa verde é a variação normal do processo. Ponto vermelho saiu da faixa e indica uma causa especial a investigar.</p></div>
+    <div id="c-leg"></div>
+    <div class="chart lg"><canvas id="c-xbar"></canvas></div>
+  </div>
+  <details class="more"><summary>Variação dentro do dia e histograma <small>para análise técnica</small></summary><div class="more-in">
+    <div class="grid">
+      <div class="card s7"><div><h3>Amplitude do subgrupo (carta R)</h3><p class="how">Diferença entre a maior e a menor peça de cada amostra. Mostra se a variação aumentou.</p></div><div class="chart sm"><canvas id="c-r"></canvas></div></div>
+      <div class="card s5"><div><h3>Medições × especificação</h3><p class="how">Todas as peças medidas. As linhas vermelhas são os limites aceitos pelo cliente.</p></div><div class="chart sm"><canvas id="c-hist"></canvas></div></div>
+    </div>
+  </div></details>
+</template>
+
+<template id="tpl-defeitos">
+  <div id="d-head"></div>
+  <div class="grid">
+    <div class="card s8">
+      <div><h3>Quais defeitos aparecem mais?</h3><p class="how">Barras: participação de cada defeito. Linha: soma acumulada. Os tipos em cor forte são os que, somados, chegam a 80% das ocorrências: ataque esses primeiro. Clique em uma barra para ver a evolução.</p></div>
+      <div class="chart lg"><canvas id="d-pareto"></canvas></div>
+    </div>
+    <div class="card s4">
+      <div><h3>Onde os defeitos acontecem?</h3><p class="how">Defeitos a cada 100 peças, por linha e turno. Quanto mais forte a cor, mais defeitos.</p></div>
+      <div id="d-heat" class="heat"></div>
+      <div id="d-scale" class="scale"></div>
+    </div>
+    <div class="card s12">
+      <div><h3 id="d-trend-t">Evolução do defeito</h3><p class="how">Ocorrências por mês, considerando os filtros de linha e turno.</p></div>
+      <div class="chart sm"><canvas id="d-trend"></canvas></div>
+    </div>
+  </div>
+</template>
+
+<template id="tpl-acoes">
+  <div id="a-head"></div>
+  <div id="a-kpis"></div>
+  <div class="card">
+    <div class="card-h"><div><h3>Ações em andamento no ciclo PDCA</h3><p class="how">Cada cartão é uma não conformidade aberta. Ela avança de Planejar até Agir e então é encerrada.</p></div><span class="sub-txt" id="a-count"></span></div>
+    <div class="board" id="a-board"></div>
+  </div>
+  <div class="grid">
+    <div class="card s6"><div><h3>Qual a causa raiz mais comum?</h3><p class="how">Classificação pelos 6M do diagrama de Ishikawa, no período.</p></div><div class="chart sm"><canvas id="a-6m"></canvas></div></div>
+    <div class="card s6"><div><h3>De onde vêm as não conformidades?</h3><p class="how">Quem identificou o problema, no período.</p></div><div class="chart sm"><canvas id="a-orig"></canvas></div></div>
+  </div>
+  <details class="more"><summary>Todas as não conformidades <small id="a-all-n"></small></summary><div class="more-in">
+    <div class="row"><div class="seg" id="a-status" role="group" aria-label="Situação"><button data-v="all">Todas</button><button data-v="open">Abertas</button><button data-v="late">Vencidas</button><button data-v="closed">Encerradas</button></div><input class="search" id="a-search" type="search" placeholder="Buscar código, descrição ou área" aria-label="Buscar não conformidade"></div>
+    <div class="tscroll"><table id="a-table"></table></div>
+  </div></details>
+</template>
+
+<template id="tpl-sobre">
+  <div class="grid">
+    <div class="card s6"><h3>A empresa e os dados</h3><div class="prose">
+      <p>A <b>Rotalume Indústria</b> é fictícia. Ela fabrica eixos e conjuntos mecânicos em três linhas (L1 Usinagem CNC, L2 Montagem e L3 Pintura) e três turnos, de segunda a sexta.</p>
+      <p>Os dados são gerados no navegador com semente fixa: <b id="ab-p">—</b> registros de produção, <b id="ab-s">—</b> amostras de medição e <b id="ab-n">—</b> não conformidades, de nov/2025 a out/2026.</p>
+      <p>Eventos colocados de propósito para a análise encontrar:</p>
+      <ul>
+        <li><b>abr–mai/2026 · L1:</b> desgaste de ferramenta desloca o diâmetro do eixo para cima. Corrigido em junho.</li>
+        <li><b>jan–jul/2026 · L2, turno C:</b> equipe nova sem padronização aumenta a variação do torque. Treinamento em julho.</li>
+        <li><b>jan–mar/2026 · L3:</b> a umidade do verão aumenta bolhas e escorrimento na pintura.</li>
+      </ul></div></div>
+    <div class="card s6"><h3>Fórmulas</h3>
+<div class="formula">Disponibilidade = tempo produzindo ÷ tempo planejado
+Performance     = (peças × ciclo ideal) ÷ tempo produzindo
+Qualidade (FPY) = peças boas de primeira ÷ peças produzidas
+OEE             = Disponibilidade × Performance × Qualidade
+
+Custo má qual.  = refugo × custo + retrabalho × 30% do custo
+
+Carta X̄  : limites = média ± A2·R̄   (n = 5 → A2 = 0,577)
+Carta R  : limite superior = D4·R̄   (D4 = 2,114)
+Cpk = mín(LSE − média ; média − LIE) ÷ 3σ (σ dentro da amostra)
+Ppk = mesmo cálculo com o desvio-padrão total</div></div>
+    <div class="card s12"><h3>Glossário e referências</h3><div class="prose"><ul>
+      <li><b>CEP</b> (Controle Estatístico de Processo): separa a variação normal das causas especiais. Os limites de controle vêm dos 25 primeiros dias medidos.</li>
+      <li><b>Limites de especificação</b>: o que o cliente aceita. Aparecem só no histograma, porque comparam peças individuais e não médias.</li>
+      <li><b>PDCA</b>: Planejar, Executar (Do), Verificar (Check) e Agir. Ciclo de melhoria usado nas ações corretivas (ISO 9001:2015, cláusula 10.2).</li>
+      <li><b>6M</b>: Método, Máquina, Mão de obra, Material, Medição e Meio ambiente.</li>
+      <li>Referências: Montgomery, <i>Introduction to Statistical Quality Control</i>; Western Electric, <i>Statistical Quality Control Handbook</i> (1956); Nakajima, <i>Introduction to TPM</i> (1988).</li>
+    </ul></div></div>
+  </div>
+</template>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.js"></script>
+<script>if (typeof Chart === "undefined") document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"><\/script>');</script>
+<script>
+/* Kit Rotalume: utilidades, estrutura da página, cartões e gráficos comuns aos três painéis. */
+const K = (() => {
+  "use strict";
+  /* ---------- números aleatórios reprodutíveis ---------- */
+  function rng(seed) {
+    let a = seed;
+    const r = () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
+    const n = () => { let u = 0, v = 0; while (!u) u = r(); while (!v) v = r(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v); };
+    return {
+      r, n,
+      between: (x, y) => x + (y - x) * r(),
+      pickW: (w) => { const s = w.reduce((p, q) => p + q, 0); let x = r() * s; for (let i = 0; i < w.length; i++) { x -= w[i]; if (x <= 0) return i; } return w.length - 1; },
+      pick: (arr) => arr[Math.floor(r() * arr.length)],
+      poisson: (l) => { const L = Math.exp(-l); let k = 0, p = 1; do { k++; p *= r(); } while (p > L); return k - 1; },
+      binom: (nn, p) => Math.max(0, Math.round(nn * p + Math.sqrt(Math.max(0, nn * p * (1 - p))) * n())),
+    };
+  }
+  const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
+
+  /* ---------- formatação ---------- */
+  const nfc = {};
+  const nf = (d = 0) => nfc[d] || (nfc[d] = new Intl.NumberFormat("pt-BR", { minimumFractionDigits: d, maximumFractionDigits: d }));
+  const fN = (x, d = 0) => isFinite(x) ? nf(d).format(x) : "—";
+  const fP = (x, d = 1) => isFinite(x) ? nf(d).format(x * 100) + "%" : "—";
+  const fPP = (x, d = 1) => nf(d).format(Math.abs(x) * 100) + " p.p.";
+  const fBRL = (x) => !isFinite(x) ? "—" : Math.abs(x) >= 1e6 ? `R$ ${nf(2).format(x / 1e6)} mi` : Math.abs(x) >= 1e4 ? `R$ ${nf(1).format(x / 1e3)} mil` : `R$ ${nf(0).format(x)}`;
+  const fH = (h) => !isFinite(h) ? "—" : h < 1 ? `${nf(0).format(h * 60)} min` : h < 48 ? `${nf(1).format(h)} h` : `${nf(1).format(h / 24)} dias`;
+  const esc = (s) => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  const median = (a) => { if (!a.length) return NaN; const s = a.slice().sort((x, y) => x - y), k = s.length >> 1; return s.length % 2 ? s[k] : (s[k - 1] + s[k]) / 2; };
+  const mean = (a) => a.length ? a.reduce((s, x) => s + x, 0) / a.length : NaN;
+  const sum = (a, f = (x) => x) => a.reduce((s, x) => s + f(x), 0);
+  const $ = (s, el = document) => el.querySelector(s);
+  const css = (v) => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+  const MES = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];
+  const MESL = ["janeiro", "fevereiro", "março", "abril", "maio", "junho", "julho", "agosto", "setembro", "outubro", "novembro", "dezembro"];
+  const MONTHS = [];
+  for (let i = 0; i < 12; i++) { const d = new Date(Date.UTC(2025, 10 + i, 1)); MONTHS.push({ i, y: d.getUTCFullYear(), mo: d.getUTCMonth(), key: `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}`, label: `${MES[d.getUTCMonth()]}/${String(d.getUTCFullYear()).slice(2)}`, long: `${MESL[d.getUTCMonth()]} de ${d.getUTCFullYear()}` }); }
+  const monthIdx = (t) => { const d = new Date(t); return (d.getUTCFullYear() - 2025) * 12 + d.getUTCMonth() - 10; };
+  const fDate = (t) => { const d = new Date(t); return `${String(d.getUTCDate()).padStart(2, "0")}/${String(d.getUTCMonth() + 1).padStart(2, "0")}/${d.getUTCFullYear()}`; };
+  const fDT = (t) => { const d = new Date(t); return `${String(d.getUTCDate()).padStart(2, "0")}/${String(d.getUTCMonth() + 1).padStart(2, "0")} ${String(d.getUTCHours()).padStart(2, "0")}:${String(d.getUTCMinutes()).padStart(2, "0")}`; };
+
+  /* ---------- ícones ---------- */
+  const P = (d) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
+  const I = {
+    home: P('<path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10v9.5h13V10"/>'),
+    pulse: P('<path d="M3 12h4l2.5-6 4 12L16 12h5"/>'),
+    bars: P('<path d="M5 20V10M10 20V4M15 20v-7M20 20v-4"/>'),
+    check: P('<path d="M4 12.5 9.5 18 20 6.5"/>'),
+    alert: P('<path d="M12 3.5 22 20H2z"/><path d="M12 10v4.5M12 17.5v.3"/>'),
+    flag: P('<path d="M5 21V4M5 4h11l-2 4 2 4H5"/>'),
+    list: P('<path d="M9 6h11M9 12h11M9 18h11M4 6h.01M4 12h.01M4 18h.01"/>'),
+    users: P('<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.5-3.6 3.2-5.5 6.5-5.5s6 1.9 6.5 5.5"/><circle cx="17" cy="9" r="2.6"/><path d="M17 14.5c2.3.2 4 1.7 4.5 4.5"/>'),
+    star: P('<path d="m12 3.5 2.6 5.5 6 .8-4.4 4.2 1.1 6-5.3-2.9-5.3 2.9 1.1-6L3.4 9.8l6-.8z"/>'),
+    spark: P('<path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/><path d="M19 15.5l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8z"/>'),
+    info: P('<circle cx="12" cy="12" r="9"/><path d="M12 11v5.5M12 7.6v.2"/>'),
+    truck: P('<path d="M2.5 6h11v10h-11zM13.5 9.5h4l3.5 3.5v3h-7.5"/><circle cx="6.5" cy="17.5" r="2"/><circle cx="17" cy="17.5" r="2"/>'),
+    box: P('<path d="M3.5 7.5 12 3l8.5 4.5v9L12 21l-8.5-4.5z"/><path d="M3.5 7.5 12 12l8.5-4.5M12 12v9"/>'),
+    money: P('<rect x="2.5" y="6" width="19" height="12" rx="2"/><circle cx="12" cy="12" r="2.7"/><path d="M6 9.5v.01M18 14.5v.01"/>'),
+    gauge: P('<path d="M4 17a8 8 0 1 1 16 0"/><path d="M12 17l4-5"/>'),
+    cycle: P('<path d="M20 11a8 8 0 0 0-14.5-4.5L4 8"/><path d="M4 4v4h4"/><path d="M4 13a8 8 0 0 0 14.5 4.5L20 16"/><path d="M20 20v-4h-4"/>'),
+    book: P('<path d="M4 4.5h6a2 2 0 0 1 2 2V20a2 2 0 0 0-2-2H4zM20 4.5h-6a2 2 0 0 0-2 2V20a2 2 0 0 1 2-2h6z"/>'),
+    queue: P('<rect x="3" y="4" width="18" height="4" rx="1.5"/><rect x="3" y="10" width="18" height="4" rx="1.5"/><rect x="3" y="16" width="11" height="4" rx="1.5"/>'),
+    chat: P('<path d="M4 5h16v11H9l-5 4z"/>'),
+    warehouse: P('<path d="M3 20V8.5L12 4l9 4.5V20"/><path d="M7 20v-7h10v7M7 16.5h10"/>'),
+    route: P('<circle cx="6" cy="18" r="2.5"/><circle cx="18" cy="6" r="2.5"/><path d="M8.5 18H16a3 3 0 0 0 0-6H8a3 3 0 0 1 0-6h7.5"/>'),
+  };
+  const STATUS_TXT = { ok: "Na meta", warn: "Atenção", bad: "Fora da meta", neutral: "Sem meta" };
+  /** status por meta: higherBetter, tolerância relativa para "Atenção" */
+  function statusOf(v, target, higherBetter = true, tol = 0.05) {
+    if (!isFinite(v) || target == null) return "neutral";
+    const ok = higherBetter ? v >= target : v <= target;
+    if (ok) return "ok";
+    const gap = higherBetter ? (target - v) / Math.abs(target) : (v - target) / Math.abs(target);
+    return gap <= tol ? "warn" : "bad";
+  }
+
+  /* ---------- estrutura (menu, filtros, rotas) ---------- */
+  const state = { from: 0, to: 11, view: null };
+  let CFG = null;
+  const listeners = [];
+  function periodOptions() {
+    const o = [["0-11", "Últimos 12 meses"], ["6-11", "Últimos 6 meses"], ["9-11", "Últimos 3 meses"]];
+    MONTHS.slice().reverse().forEach(m => o.push([`${m.i}-${m.i}`, m.long.charAt(0).toUpperCase() + m.long.slice(1)]));
+    return o;
+  }
+  function shell(cfg) {
+    CFG = cfg;
+    document.documentElement.style.setProperty("--a-light", cfg.accent[0]);
+    document.documentElement.style.setProperty("--a-dark", cfg.accent[1]);
+    document.documentElement.style.setProperty("--a-soft-light", cfg.accent[2]);
+    document.documentElement.style.setProperty("--a-soft-dark", cfg.accent[3]);
+    (cfg.filters || []).forEach(f => state[f.id] = f.options[0][0]);
+    try { const s = JSON.parse(localStorage.getItem(cfg.key) || "{}"); ["from", "to", ...(cfg.filters || []).map(f => f.id)].forEach(k => { if (s[k] !== undefined) state[k] = s[k]; }); } catch (e) { /* sem armazenamento */ }
+    const app = document.createElement("div"); app.className = "app";
+    app.innerHTML = `
+      <aside class="side">
+        <div class="brand"><span class="logo">${cfg.logo}</span><div><b>${cfg.title}</b><small>${cfg.company}</small></div></div>
+        <nav class="nav" aria-label="Seções do painel"><span class="nav-label">Seções</span>
+          ${cfg.views.map(v => `<button data-v="${v.id}" id="nav-${v.id}">${I[v.icon] || ""}<span>${v.label}</span><small>${v.desc}</small></button>`).join("")}
+        </nav>
+        <div class="side-foot">${cfg.sideFoot || ""}<span>Dados fictícios · atualizados até ${cfg.asOf}</span></div>
+      </aside>
+      <div class="main">
+        <header class="top"><div class="top-in">
+          <div><h1 id="v-title"></h1><p class="sub" id="v-sub"></p></div>
+          <div class="filters" id="filters">
+            <div class="field"><label for="f-period">Período</label><select id="f-period">${periodOptions().map(([v, l]) => `<option value="${v}">${l}</option>`).join("")}</select></div>
+            ${(cfg.filters || []).map(f => `<div class="field"><label for="f-${f.id}">${f.label}</label><select id="f-${f.id}">${f.options.map(([v, l]) => `<option value="${v}">${l}</option>`).join("")}</select></div>`).join("")}
+          </div>
+        </div></header>
+        <main class="content" id="content"></main>
+        <footer class="foot">${cfg.footer}</footer>
+      </div>`;
+    document.body.prepend(app);
+    const content = $("#content");
+    cfg.views.forEach(v => { const sec = $("#tpl-" + v.id); const el = document.createElement("section"); el.className = "view"; el.id = "view-" + v.id; el.hidden = true; el.setAttribute("aria-labelledby", "v-title"); if (sec) el.innerHTML = sec.innerHTML; content.appendChild(el); });
+    $(".nav").addEventListener("click", e => { const b = e.target.closest("button[data-v]"); if (b) go(b.dataset.v, true); });
+    $("#f-period").addEventListener("change", e => { const [a, b] = e.target.value.split("-").map(Number); state.from = a; state.to = b; changed(); });
+    (cfg.filters || []).forEach(f => $("#f-" + f.id).addEventListener("change", e => { state[f.id] = e.target.value; changed(); }));
+    window.addEventListener("hashchange", () => go(location.hash.slice(1), false));
+    const rerender = () => render();
+    try { matchMedia("(prefers-color-scheme: dark)").addEventListener("change", rerender); } catch (e) { /* antigo */ }
+    new MutationObserver(rerender).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+    syncFilters();
+    if (window.Chart) { Chart.defaults.font.family = getComputedStyle(document.body).fontFamily; Chart.defaults.font.size = 12; Chart.register(rangeShade, refLines); }
+    go(location.hash.slice(1), false);
+  }
+  function syncFilters() {
+    const pv = `${state.from}-${state.to}`; const sel = $("#f-period");
+    if (![...sel.options].some(o => o.value === pv)) { state.from = 0; state.to = 11; }
+    sel.value = `${state.from}-${state.to}`;
+    (CFG.filters || []).forEach(f => { $("#f-" + f.id).value = state[f.id]; });
+  }
+  function changed() { try { const o = { from: state.from, to: state.to }; (CFG.filters || []).forEach(f => o[f.id] = state[f.id]); localStorage.setItem(CFG.key, JSON.stringify(o)); } catch (e) { /* ignora */ } syncFilters(); render(); listeners.forEach(fn => fn()); }
+  function go(id, push) {
+    const v = CFG.views.find(x => x.id === id) || CFG.views[0];
+    state.view = v.id;
+    CFG.views.forEach(x => { $("#view-" + x.id).hidden = x.id !== v.id; const b = $("#nav-" + x.id); if (x.id === v.id) b.setAttribute("aria-current", "page"); else b.removeAttribute("aria-current"); });
+    $("#v-title").textContent = v.heading || v.label; $("#v-sub").textContent = v.sub || "";
+    $("#filters").hidden = !!v.noFilters;
+    (CFG.filters || []).forEach(f => { $("#f-" + f.id).closest(".field").hidden = (v.hideFilters || []).includes(f.id); });
+    if (push) { try { history.replaceState(null, "", "#" + v.id); } catch (e) { location.hash = v.id; } window.scrollTo({ top: 0 }); }
+    render();
+  }
+  function render() { const v = CFG.views.find(x => x.id === state.view); if (v && v.render) v.render(); }
+  const periodLabel = (f = state.from, t = state.to) => f === t ? "em " + MONTHS[f].long : (f === 0 && t === 11 ? "nos últimos 12 meses" : `de ${MONTHS[f].label} a ${MONTHS[t].label}`);
+  const prevRange = () => { const len = state.to - state.from + 1, f = state.from - len; return f < 0 ? null : [f, state.from - 1]; };
+  const inRange = (m) => m >= state.from && m <= state.to;
+
+  /* ---------- blocos de conteúdo ---------- */
+  function headline(el, h) {
+    el.className = "headline " + (h.status || "ok");
+    el.innerHTML = `<span class="hi">${h.status === "ok" ? I.check : h.status === "bad" ? I.alert : I.flag}</span><div><h2>${h.title}</h2>${h.text ? `<p>${h.text}</p>` : ""}</div>`;
+  }
+  function spark(vals, color) {
+    const idx = vals.map((v, i) => [v, i]).filter(([v]) => isFinite(v)); if (idx.length < 2) return "";
+    const vs = idx.map(x => x[0]), mn = Math.min(...vs), mx = Math.max(...vs), w = 240, h = 34, pd = 4, n = vals.length;
+    const X = (i) => pd + i * (w - 2 * pd) / (n - 1), Y = (v) => h - pd - (mx === mn ? .5 : (v - mn) / (mx - mn)) * (h - 2 * pd);
+    const line = idx.map(([v, i], k) => (k ? "L" : "M") + X(i).toFixed(1) + " " + Y(v).toFixed(1)).join(" ");
+    const area = line + ` L${X(idx[idx.length - 1][1]).toFixed(1)} ${h} L${X(idx[0][1]).toFixed(1)} ${h}Z`;
+    const full = state.from === 0 && state.to === n - 1;
+    const x0 = X(state.from) - (state.from === state.to ? 4 : 0), x1 = X(state.to) + (state.from === state.to ? 4 : 0);
+    const last = idx[idx.length - 1];
+    return `<svg class="spark" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" aria-hidden="true">${full ? "" : `<rect x="${x0.toFixed(1)}" y="0" width="${Math.max(2, x1 - x0).toFixed(1)}" height="${h}" fill="${css("--accent-soft")}" opacity=".7"/>`}<path d="${area}" fill="${color}" opacity=".1"/><path d="${line}" fill="none" stroke="${color}" stroke-width="1.8" vector-effect="non-scaling-stroke"/><circle cx="${X(last[1])}" cy="${Y(last[0])}" r="2.8" fill="${color}"/></svg>`;
+  }
+  /** k = {label, tip, value, unit, target, status, delta, spark} */
+  function kpis(el, list) {
+    el.className = "kpis";
+    el.innerHTML = list.map(k => `<div class="kpi">
+      <div class="k-top"><span class="k-lab">${k.label}${k.tip ? `<button class="info" type="button" aria-label="O que é ${esc(k.label)}">i<span class="tip" role="tooltip">${k.tip}</span></button>` : ""}</span>${k.status ? `<span class="status ${k.status}">${k.statusText || STATUS_TXT[k.status]}</span>` : ""}</div>
+      <div class="k-val">${k.value}${k.unit && k.value !== "—" ? `<small>${k.unit}</small>` : ""}</div>
+      <div class="k-meta">${k.target ? `<span>${k.target}</span>` : ""}${k.delta || ""}${k.note ? `<span>${k.note}</span>` : ""}</div>
+      ${k.spark ? spark(k.spark, css("--accent")) : ""}
+    </div>`).join("");
+  }
+  /** delta contra o período anterior */
+  function delta(cur, prev, upGood, fmt) {
+    if (prev == null || !isFinite(prev) || !isFinite(cur)) return "";
+    const d = cur - prev; if (Math.abs(d) < 1e-9) return `<span class="delta flat">= período anterior</span>`;
+    const good = (d > 0) === upGood;
+    return `<span class="delta ${good ? "good" : "badd"}">${d > 0 ? "▲" : "▼"} ${fmt(Math.abs(d))} vs anterior</span>`;
+  }
+  function finds(el, items) {
+    el.className = "finds";
+    el.innerHTML = items.map(f => `<li><span class="fi ${f.s}">${f.s === "ok" ? I.check : f.s === "bad" ? I.alert : f.s === "warn" ? I.flag : I.info}</span><div><p>${f.title}</p>${f.text ? `<p>${f.text}</p>` : ""}</div></li>`).join("");
+  }
+  function legend(el, items) {
+    el.className = "legend";
+    el.innerHTML = items.map(i => `<span><i class="${i.type || ""}" style="${i.type === "dash" ? "" : `background:${i.color}`}"></i>${i.label}</span>`).join("");
+  }
+
+  /* ---------- gráficos ---------- */
+  const charts = {};
+  const rangeShade = { id: "rangeShade", beforeDatasetsDraw(ch, a, o) {
+    if (!o || o.from == null || o.disabled) return; const x = ch.scales.x; if (!x || x.type !== "category") return;
+    const n = ch.data.labels.length; if (o.from === 0 && o.to === n - 1) return;
+    const step = n > 1 ? x.getPixelForValue(1) - x.getPixelForValue(0) : ch.chartArea.width;
+    const l = x.getPixelForValue(o.from) - step / 2, r = x.getPixelForValue(o.to) + step / 2;
+    const c = ch.ctx; c.save(); c.fillStyle = o.color; c.fillRect(Math.max(l, ch.chartArea.left), ch.chartArea.top, Math.min(r, ch.chartArea.right) - Math.max(l, ch.chartArea.left), ch.chartArea.bottom - ch.chartArea.top); c.restore();
+  } };
+  const refLines = { id: "refLines", afterDatasetsDraw(ch, a, o) {
+    if (!o || !o.lines) return; const c = ch.ctx, ca = ch.chartArea;
+    o.lines.forEach(l => {
+      const sc = ch.scales[l.axis || (ch.options.indexAxis === "y" ? "x" : "y")]; if (!sc) return;
+      const p = sc.getPixelForValue(l.value); const vert = (l.axis || (ch.options.indexAxis === "y" ? "x" : "y")) === "x";
+      if (vert ? (p < ca.left || p > ca.right) : (p < ca.top || p > ca.bottom)) return;
+      c.save(); c.strokeStyle = l.color || css("--ink-2"); c.lineWidth = l.width || 1.4; c.setLineDash(l.dash || [5, 4]);
+      c.beginPath(); if (vert) { c.moveTo(p, ca.top); c.lineTo(p, ca.bottom); } else { c.moveTo(ca.left, p); c.lineTo(ca.right, p); } c.stroke();
+      if (l.label) { c.setLineDash([]); c.font = `600 11px ${Chart.defaults.font.family}`; c.fillStyle = l.color || css("--ink-2"); const tw = c.measureText(l.label).width;
+        if (vert) { c.textAlign = "left"; c.fillText(l.label, Math.min(p + 4, ca.right - tw), ca.top + 10); } else { c.textAlign = "right"; c.fillStyle = css("--surface"); c.fillRect(ca.right - tw - 6, p - 15, tw + 6, 13); c.fillStyle = l.color || css("--ink-2"); c.fillText(l.label, ca.right - 2, p - 5); } }
+      c.restore();
+    });
+  } };
+  function baseOpts() {
+    const ink2 = css("--ink-2"), line = css("--line-2"), surf = css("--surface"), ink = css("--ink"), muted = css("--muted");
+    return {
+      responsive: true, maintainAspectRatio: false, locale: "pt-BR", animation: false, interaction: { mode: "index", intersect: false },
+      layout: { padding: { top: 4, right: 6 } },
+      plugins: { legend: { display: false }, rangeShade: { from: state.from, to: state.to, color: css("--accent-soft") },
+        tooltip: { backgroundColor: surf, titleColor: ink, bodyColor: ink2, footerColor: ink2, borderColor: css("--line"), borderWidth: 1, padding: 11, boxPadding: 5, usePointStyle: true, titleFont: { weight: "600" }, footerFont: { weight: "600" } } },
+      scales: { x: { grid: { display: false }, border: { color: css("--line") }, ticks: { color: muted, maxRotation: 0, autoSkipPadding: 12 } },
+        y: { grid: { color: line, drawTicks: false }, border: { display: false }, ticks: { color: muted, padding: 8 } } },
+    };
+  }
+  function merge(a, b) { for (const k in b) { if (b[k] && typeof b[k] === "object" && !Array.isArray(b[k]) && a[k] && typeof a[k] === "object") merge(a[k], b[k]); else a[k] = b[k]; } return a; }
+  function chart(id, type, data, opts = {}, plugins) {
+    const cv = document.getElementById(id); if (!cv) return;
+    if (!window.Chart) { if (!cv.parentElement.querySelector(".chart-msg")) cv.parentElement.insertAdjacentHTML("beforeend", '<div class="chart-msg">Não foi possível carregar os gráficos. Verifique a conexão e recarregue a página.</div>'); return; }
+    if (charts[id]) charts[id].destroy();
+    charts[id] = new Chart(cv, { type, data, options: merge(baseOpts(), opts), plugins });
+    return charts[id];
+  }
+  /** esmaece itens fora do período selecionado */
+  const fade = (color, i) => inRange(i) ? color : color + "55";
+  const dim = (arr, colorFn) => arr.map((_, i) => fade(colorFn(i), i));
+  const seq = () => ["--seq-1", "--seq-2", "--seq-3", "--seq-4", "--seq-5", "--seq-6"].map(css);
+  const CC = () => ["--c1", "--c2", "--c3", "--c4", "--c5", "--c6"].map(css);
+  const monthLabels = () => MONTHS.map(m => m.label);
+
+  function sortableTable(table, cols, rows, st, rowHtml) {
+    const { k, d } = st;
+    rows.sort((a, b) => { const x = a[k], y = b[k]; return ((x > y) - (x < y)) * d; });
+    table.classList.add("sortable");
+    table.innerHTML = `<thead><tr>${cols.map(c => `<th data-k="${c[0]}" class="${c[2] ? "r" : ""}" tabindex="0" ${c[0] === k ? `aria-sort="${d > 0 ? "ascending" : "descending"}"` : ""}>${c[1]}</th>`).join("")}</tr></thead><tbody>${rows.map(rowHtml).join("")}</tbody>`;
+    if (!table.dataset.bound) { table.dataset.bound = 1;
+      table.addEventListener("click", e => { const th = e.target.closest("th[data-k]"); if (!th) return; const key = th.dataset.k; st.d = st.k === key ? -st.d : (typeof rows[0]?.[key] === "string" ? 1 : -1); st.k = key; table.dispatchEvent(new CustomEvent("resort")); });
+      table.addEventListener("keydown", e => { if (e.key === "Enter" && e.target.matches("th")) e.target.click(); }); }
+  }
+
+  /** cor de texto legível sobre um fundo hex */
+  function textOn(hex) { const h = hex.replace("#", ""); const [r, g, b] = [0, 2, 4].map(i => parseInt(h.slice(i, i + 2), 16) / 255).map(c => c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4); return 0.2126 * r + 0.7152 * g + 0.0722 * b > 0.36 ? "#121821" : "#ffffff"; }
+  /** junta itens com vírgulas e "e" */
+  const joinE = (a) => a.length <= 1 ? (a[0] || "") : a.slice(0, -1).join(", ") + " e " + a[a.length - 1];
+  /** singular ou plural */
+  const pl = (n, s, p) => `${fN(n)} ${n === 1 ? s : p}`;
+  return { textOn, joinE, pl, rng, clamp, nf, fN, fP, fPP, fBRL, fH, esc, median, mean, sum, $, css, MONTHS, MES, monthIdx, fDate, fDT, I, statusOf, STATUS_TXT, state, shell, render, onChange: (fn) => listeners.push(fn), periodLabel, prevRange, inRange, headline, kpis, delta, finds, legend, chart, fade, dim, seq, CC, monthLabels, sortableTable };
+})();
+
+</script>
+<script>
+(() => {
+"use strict";
+const { fN, fP, fPP, fBRL, esc, mean, sum, $, css, MONTHS, monthIdx, statusOf, state, fDate } = K;
+const R = K.rng(20261031);
+const rnd = R.r, randn = R.n, between = R.between, binom = R.binom, pickW = R.pickW, clamp = K.clamp;
+const DAY = 86400000, T0 = Date.UTC(2025, 10, 1), T1 = Date.UTC(2026, 9, 31), HOJE = T1;
+
+/* ============ base fictícia ============ */
+const LINES = [
+  { id: "L1", nome: "Usinagem CNC", curto: "L1 Usinagem", ciclo: 0.5, perf: 0.90, baseDef: 0.016, custo: 38,
+    carac: { art: "O", nome: "Diâmetro do eixo", un: "mm", nom: 25.000, lie: 24.950, lse: 25.050, sd: 0.0095, dec: 3 },
+    defeitos: ["Dimensional fora de especificação", "Rebarba", "Risco superficial", "Rosca danificada"], mix: [0.46, 0.27, 0.17, 0.10] },
+  { id: "L2", nome: "Montagem", curto: "L2 Montagem", ciclo: 0.8, perf: 0.87, baseDef: 0.019, custo: 55,
+    carac: { art: "O", nome: "Torque de aperto", un: "N·m", nom: 12.0, lie: 11.0, lse: 13.0, sd: 0.24, dec: 2 },
+    defeitos: ["Torque fora de especificação", "Componente faltante", "Montagem invertida", "Risco superficial"], mix: [0.44, 0.24, 0.12, 0.20] },
+  { id: "L3", nome: "Pintura", curto: "L3 Pintura", ciclo: 0.6, perf: 0.89, baseDef: 0.019, custo: 24,
+    carac: { art: "A", nome: "Espessura da tinta", un: "µm", nom: 80, lie: 65, lse: 95, sd: 3.4, dec: 1 },
+    defeitos: ["Bolha", "Escorrimento", "Espessura baixa", "Contaminação"], mix: [0.44, 0.28, 0.17, 0.11] },
+];
+const SHIFTS = ["A", "B", "C"], SHIFT_F = [1.0, 1.08, 1.15], PLANNED = 450;
+const prod = [], spc = [];
+const tWear0 = Date.UTC(2026, 3, 1), tWear1 = Date.UTC(2026, 5, 1);
+let dayN = 0;
+for (let t = T0; t <= T1; t += DAY) {
+  const dow = new Date(t).getUTCDay(); if (dow === 0 || dow === 6) continue;
+  const m = monthIdx(t), wear = t >= tWear0 && t < tWear1, l2c = m >= 2 && m <= 8, humid = m >= 2 && m <= 4;
+  LINES.forEach((L, li) => {
+    for (let s = 0; s < 3; s++) {
+      let down = between(32, 64);
+      if (rnd() < 0.035) down += between(60, 170);
+      if (li === 0 && wear) down += between(12, 28);
+      const run = Math.max(120, PLANNED - down);
+      const perf = clamp(L.perf + randn() * 0.025, 0.7, 0.99);
+      const produced = Math.floor(run / L.ciclo * perf);
+      let p = L.baseDef * SHIFT_F[s], mix = L.mix;
+      if (li === 0 && wear) { p *= 1.4 + 1.1 * ((t - tWear0) / (tWear1 - tWear0)); mix = [0.70, 0.15, 0.10, 0.05]; }
+      if (li === 1 && s === 2 && l2c) { p *= 2.0; mix = [0.62, 0.16, 0.08, 0.14]; }
+      if (li === 2 && humid) { p *= 1.55; mix = [0.55, 0.30, 0.09, 0.06]; }
+      p *= (1 - 0.01 * m) * Math.exp(randn() * 0.16);
+      const defects = Math.min(produced, binom(produced, p));
+      const byType = [0, 0, 0, 0];
+      for (let k = 0; k < defects; k++) byType[pickW(mix)]++;
+      const sc = Math.min(defects, binom(defects, 0.4));
+      prod.push({ t, m, line: li, shift: s, planned: PLANNED, run, produced, ideal: produced * L.ciclo, defects, byType, scrap: sc, rework: defects - sc, cost: sc * L.custo + (defects - sc) * L.custo * 0.3 });
+    }
+  });
+  const sShift = dayN % 3;
+  LINES.forEach((L, li) => {
+    const c = L.carac; let mu = c.nom, sd = c.sd;
+    if (li === 0 && wear) mu += 0.008 + 0.030 * ((t - tWear0) / (tWear1 - tWear0));
+    if (li === 1 && sShift === 2 && l2c) { sd *= 1.75; mu += 0.12; }
+    if (li === 2 && humid) { mu += 3.8; sd *= 1.2; }
+    const vals = []; for (let k = 0; k < 5; k++) vals.push(mu + sd * randn());
+    spc.push({ t, m, line: li, shift: sShift, vals, mean: vals.reduce((a, b) => a + b, 0) / 5, range: Math.max(...vals) - Math.min(...vals) });
+  });
+  dayN++;
+}
+
+const ORIGENS = ["Inspeção de processo", "Auditoria interna", "Reclamação de cliente", "Fornecedor"];
+const CAUSAS = ["Método", "Máquina", "Mão de obra", "Material", "Medição", "Meio ambiente"];
+const AREA = { "Método": "Engenharia de processos", "Máquina": "Manutenção", "Mão de obra": "Produção", "Material": "Suprimentos", "Medição": "Metrologia", "Meio ambiente": "Facilities" };
+const GRAV = ["Menor", "Maior", "Crítica"], PRAZO = { "Menor": 45, "Maior": 30, "Crítica": 15 }, MED_CLOSE = { "Menor": 36, "Maior": 28, "Crítica": 13 };
+const AUDIT = ["Instrução de trabalho desatualizada no posto", "Registro de inspeção incompleto", "Instrumento de medição com calibração vencida", "Material não conforme sem identificação", "Treinamento do posto sem registro"];
+const FORN = [["Matéria-prima com dureza fora do especificado", 0], ["Lote de tinta com viscosidade fora do padrão", 2], ["Parafusos com rosca irregular no recebimento", 1], ["Certificado de qualidade ausente no recebimento", null]];
+const ncs = [];
+function addNC(o) {
+  const days = Math.max(3, Math.round(MED_CLOSE[o.grav] * Math.exp(randn() * 0.55)));
+  const close = o.close ?? (o.open + days * DAY);
+  ncs.push({ ...o, prazo: o.open + PRAZO[o.grav] * DAY, close: close <= HOJE ? close : null, reinc: o.reinc ?? (rnd() < 0.11) });
+}
+for (let t = T0; t <= T1 - 2 * DAY; t += DAY) {
+  const dow = new Date(t).getUTCDay(); if (dow === 0 || dow === 6) continue;
+  const m = monthIdx(t);
+  if (rnd() > 0.36) continue;
+  const origem = ORIGENS[pickW([0.45, 0.18, 0.14, 0.23])];
+  let line = pickW([1, 1.1, 1]), causa, desc;
+  const L = LINES[line];
+  if (origem === "Auditoria interna") { desc = AUDIT[Math.floor(rnd() * AUDIT.length)]; causa = desc.includes("calibração") ? "Medição" : desc.includes("Treinamento") ? "Mão de obra" : "Método"; }
+  else if (origem === "Fornecedor") { const f = FORN[Math.floor(rnd() * FORN.length)]; desc = f[0]; if (f[1] !== null) line = f[1]; causa = "Material"; }
+  else { const d = L.defeitos[pickW(L.mix)]; desc = origem === "Reclamação de cliente" ? `Cliente reportou ${d.toLowerCase()} em lote entregue` : `${d} acima do limite de alerta`; causa = CAUSAS[pickW([0.3, 0.25, 0.2, 0.08, 0.1, 0.07])]; }
+  const grav = origem === "Reclamação de cliente" ? GRAV[pickW([0.2, 0.55, 0.25])] : GRAV[pickW([0.6, 0.33, 0.07])];
+  addNC({ open: t, m, line, origem, causa, area: AREA[causa], grav, desc });
+}
+const D = (y, mo, d) => Date.UTC(y, mo - 1, d);
+[
+  { open: D(2026, 1, 20), line: 2, origem: "Inspeção de processo", causa: "Meio ambiente", grav: "Maior", desc: "Bolhas na pintura acima do limite de alerta com umidade relativa acima de 75%", close: D(2026, 3, 18), reinc: false },
+  { open: D(2026, 2, 24), line: 1, origem: "Inspeção de processo", causa: "Mão de obra", grav: "Maior", desc: "Torque fora de especificação recorrente no turno C", close: D(2026, 8, 14), reinc: false },
+  { open: D(2026, 4, 22), line: 0, origem: "Inspeção de processo", causa: "Máquina", grav: "Maior", desc: "Diâmetro do eixo acima do limite de controle: desgaste de ferramenta no torno CNC", close: D(2026, 6, 10), reinc: false },
+  { open: D(2026, 5, 18), line: 0, origem: "Reclamação de cliente", causa: "Máquina", grav: "Crítica", desc: "Cliente reportou eixos com diâmetro acima da especificação", close: D(2026, 6, 12), reinc: false },
+  { open: D(2026, 10, 6), line: 0, origem: "Auditoria interna", causa: "Medição", grav: "Maior", desc: "Micrômetro do posto L1 com calibração vencida", close: null, reinc: false },
+  { open: D(2026, 9, 10), line: 1, origem: "Fornecedor", causa: "Material", grav: "Crítica", desc: "Lote de parafusos com rosca irregular bloqueado no recebimento", close: null, reinc: false },
+].forEach(o => { o.m = monthIdx(o.open); o.area = AREA[o.causa]; const c = o.close; delete o.close; addNC({ ...o, close: c === null ? HOJE + 999 * DAY : c }); });
+ncs.sort((a, b) => a.open - b.open);
+const seqN = {};
+ncs.forEach(n => {
+  const y = new Date(n.open).getUTCFullYear(); seqN[y] = (seqN[y] || 0) + 1;
+  n.code = `NC-${y}-${String(seqN[y]).padStart(3, "0")}`;
+  n.isOpen = n.close === null; n.late = n.isOpen && n.prazo < HOJE; n.closedLate = !n.isOpen && n.close > n.prazo;
+  n.age = Math.round(((n.isOpen ? HOJE : n.close) - n.open) / DAY);
+  if (n.isOpen) { const f = (HOJE - n.open) / (PRAZO[n.grav] * DAY); n.stage = f < 0.25 ? "Planejar" : f < 0.55 ? "Executar" : f < 0.85 ? "Verificar" : "Agir"; n.reinc = false; }
+  else n.stage = "Encerrada";
+});
+
+/* ============ consultas ============ */
+const META = { oee: 0.75, fpy: 0.98 };
+const inL = (r) => state.line === "all" || r.line === +state.line;
+const inS = (r) => state.shift === "all" || r.shift === +state.shift;
+const rowsP = (f = state.from, t = state.to) => prod.filter(r => r.m >= f && r.m <= t && inL(r) && inS(r));
+function agg(rows) {
+  const a = { planned: sum(rows, r => r.planned), run: sum(rows, r => r.run), ideal: sum(rows, r => r.ideal), produced: sum(rows, r => r.produced), defects: sum(rows, r => r.defects), scrap: sum(rows, r => r.scrap), rework: sum(rows, r => r.rework), cost: sum(rows, r => r.cost) };
+  a.A = a.run / a.planned; a.P = a.ideal / a.run; a.Q = (a.produced - a.defects) / a.produced; a.OEE = a.A * a.P * a.Q; a.rate = a.defects / a.produced;
+  return a;
+}
+const prevA = () => { const p = K.prevRange(); return p ? agg(rowsP(p[0], p[1])) : null; };
+const lineIdx = () => state.line === "all" ? [0, 1, 2] : [+state.line];
+function pareto(rows) {
+  const m = new Map();
+  rows.forEach(r => LINES[r.line].defeitos.forEach((d, k) => { if (r.byType[k]) { const e = m.get(d) || { name: d, n: 0 }; e.n += r.byType[k]; m.set(d, e); } }));
+  const arr = [...m.values()].sort((a, b) => b.n - a.n), tot = sum(arr, x => x.n); let c = 0;
+  arr.forEach((x, i) => { x.share = x.n / tot; x.prev = c; c += x.n; x.cum = c / tot; x.vital = x.prev / tot < 0.8; });
+  return arr;
+}
+
+/* ============ visão geral ============ */
+function vResumo() {
+  const rows = rowsP(), a = agg(rows), b = prevA(), all = prod.filter(r => inL(r) && inS(r));
+  const mAll = MONTHS.map(mm => agg(all.filter(r => r.m === mm.i)));
+  const late = ncs.filter(n => n.late && inL(n));
+  const st = statusOf(a.OEE, META.oee, true, 0.04);
+  const per = lineIdx().map(li => ({ li, a: agg(rows.filter(r => r.line === li)) })).sort((x, y) => x.a.OEE - y.a.OEE);
+  K.headline($("#q-head"), { status: st,
+    title: `A eficiência global (OEE) foi de ${fP(a.OEE)} ${K.periodLabel()}${st === "ok" ? ", acima da meta de 75%." : ", abaixo da meta de 75%."}`,
+    text: per.length > 1 ? `A linha com menor eficiência é a <b>${LINES[per[0].li].curto}</b> (${fP(per[0].a.OEE)}). A má qualidade custou ${fBRL(a.cost)} em peças perdidas e retrabalho.` : `A má qualidade custou ${fBRL(a.cost)} em peças perdidas e retrabalho.` });
+  K.kpis($("#q-kpis"), [
+    { label: "Eficiência global (OEE)", tip: "Mostra quanto do tempo planejado virou peça boa. Desconta paradas, lentidão e peças com defeito. 75% é a meta da fábrica; 85% é referência de classe mundial.", value: fN(a.OEE * 100, 1), unit: "%", target: "Meta ≥ 75%", status: st, delta: K.delta(a.OEE, b?.OEE, true, fPP), spark: mAll.map(x => x.OEE) },
+    { label: "Peças boas de primeira", tip: "FPY: parte das peças que saiu sem defeito, sem precisar de retrabalho.", value: fN(a.Q * 100, 2), unit: "%", target: "Meta ≥ 98%", status: statusOf(a.Q, META.fpy, true, 0.005), delta: K.delta(a.Q, b?.Q, true, x => K.fPP(x, 2)), spark: mAll.map(x => x.Q) },
+    { label: "Custo da má qualidade", tip: "Valor das peças perdidas (refugo) mais 30% do valor das peças consertadas (retrabalho).", value: fBRL(a.cost), target: `${fN(a.scrap)} peças perdidas`, delta: K.delta(a.cost, b?.cost, false, fBRL), spark: mAll.map(x => x.cost) },
+    { label: "Ações corretivas vencidas", tip: "Não conformidades ainda abertas depois do prazo. Hoje, independentemente do período escolhido.", value: fN(late.length), target: "Meta: nenhuma", status: late.length ? (late.length > 2 ? "bad" : "warn") : "ok", note: K.pl(ncs.filter(n => n.isOpen && inL(n)).length, "aberta no total", "abertas no total") },
+  ]);
+  const cc = K.CC(), li = lineIdx();
+  K.legend($("#q-oee-leg"), li.map(i => ({ label: LINES[i].curto, color: cc[i], type: "line" })).concat([{ label: "Meta 75%", type: "dash" }]));
+  const series = li.map(i => MONTHS.map(mm => { const x = agg(all.filter(r => r.m === mm.i && r.line === i)); return +(x.OEE * 100).toFixed(1); }));
+  const flat = series.flat();
+  K.chart("q-oee", "line", { labels: K.monthLabels(), datasets: li.map((i, j) => ({ label: LINES[i].curto, data: series[j], borderColor: cc[i], backgroundColor: cc[i], borderWidth: 2.6, pointRadius: 3.5, tension: .3 })) },
+    { scales: { y: { suggestedMin: Math.floor(Math.min(...flat, 75) - 3), suggestedMax: Math.ceil(Math.max(...flat) + 2), ticks: { callback: v => v + "%" } } }, plugins: { refLines: { lines: [{ value: 75, label: "Meta 75%" }] }, tooltip: { callbacks: { label: c => ` ${c.dataset.label}: ${K.nf(1).format(c.parsed.y)}%` } } } });
+  // cascata
+  const lossA = 1 - a.A, lossP = a.A * (1 - a.P), lossQ = a.A * a.P * (1 - a.Q);
+  const steps = [["Tempo planejado", 0, 1, "base"], ["Paradas", 1 - lossA, 1, "loss"], ["Lentidão", 1 - lossA - lossP, 1 - lossA, "loss"], ["Defeitos", a.OEE, a.OEE + lossQ, "loss"], ["OEE", 0, a.OEE, "res"]];
+  const colOf = (k) => k === "loss" ? css("--bad-mark") : k === "res" ? css("--accent") : css("--seq-2");
+  K.chart("q-fall", "bar", { labels: steps.map(s => s[0]), datasets: [{ data: steps.map(s => [+(s[1] * 100).toFixed(2), +(s[2] * 100).toFixed(2)]), backgroundColor: steps.map(s => colOf(s[3])), borderRadius: 5, borderSkipped: false, maxBarThickness: 64 }] },
+    { scales: { x: { ticks: { autoSkip: false } }, y: { min: 0, max: 100, ticks: { callback: v => v + "%" } } }, plugins: { rangeShade: { disabled: true }, tooltip: { callbacks: { label: c => { const [lo, hi] = c.raw; const s = steps[c.dataIndex]; return s[3] === "loss" ? ` Perda de ${K.nf(1).format(hi - lo)} pontos` : ` ${K.nf(1).format(hi - lo)}%`; } } } } },
+    [{ id: "fallLabels", afterDatasetsDraw(ch) { const c = ch.ctx, meta = ch.getDatasetMeta(0); c.save(); c.font = `600 12px ${Chart.defaults.font.family}`; c.textAlign = "center"; c.fillStyle = css("--ink");
+      meta.data.forEach((bar, i) => { const s = steps[i], v = (s[2] - s[1]) * 100; c.fillText((s[3] === "loss" ? "−" : "") + K.nf(1).format(v) + (s[3] === "loss" ? " p.p." : "%"), bar.x, Math.min(bar.y, bar.base) - 6); }); c.restore(); } }]);
+  K.legend($("#q-copq-leg"), [{ label: "Refugo (peça perdida)", color: css("--seq-6") }, { label: "Retrabalho", color: css("--seq-3") }]);
+  const scrapC = MONTHS.map(mm => Math.round(sum(all.filter(r => r.m === mm.i), r => r.scrap * LINES[r.line].custo)));
+  const rewC = MONTHS.map(mm => Math.round(sum(all.filter(r => r.m === mm.i), r => r.rework * LINES[r.line].custo * 0.3)));
+  K.chart("q-copq", "bar", { labels: K.monthLabels(), datasets: [
+    { label: "Refugo", data: scrapC, backgroundColor: K.dim(MONTHS, () => css("--seq-6")), borderColor: css("--surface"), borderWidth: { top: 2 }, maxBarThickness: 32 },
+    { label: "Retrabalho", data: rewC, backgroundColor: K.dim(MONTHS, () => css("--seq-3")), borderRadius: { topLeft: 5, topRight: 5 }, borderSkipped: false, maxBarThickness: 32 },
+  ] }, { scales: { x: { stacked: true }, y: { stacked: true, ticks: { callback: v => v >= 1000 ? `${K.nf(0).format(v / 1000)} mil` : v } } }, plugins: { rangeShade: { disabled: true }, tooltip: { callbacks: { label: c => ` ${c.dataset.label}: R$ ${K.nf(0).format(c.parsed.y)}`, footer: it => `Total: R$ ${K.nf(0).format(sum(it, i => i.parsed.y))}` } } } });
+  // achados
+  const f = [];
+  const combos = []; [0, 1, 2].forEach(l => [0, 1, 2].forEach(s => { const r = rows.filter(x => x.line === l && x.shift === s); if (r.length) combos.push({ l, s, a: agg(r) }); }));
+  if (combos.length > 1) { combos.sort((x, y) => y.a.rate - x.a.rate); const w = combos[0]; f.push({ s: "bad", title: `<b>${LINES[w.l].curto}, turno ${SHIFTS[w.s]}</b> tem mais defeitos: ${fN(w.a.rate * 100, 1)} a cada 100 peças.`, text: `É ${K.nf(1).format(w.a.rate / a.rate)} vezes a média do recorte.` }); }
+  const p = pareto(rows); if (p.length) f.push({ s: "warn", title: `<b>${p.filter(x => x.vital).length} de ${p.length}</b> tipos de defeito somam ${fP(p.filter(x => x.vital).slice(-1)[0].cum, 0)} das ocorrências.`, text: `O principal é <b>${p[0].name.toLowerCase()}</b>, com ${fP(p[0].share, 0)}.` });
+  const big = [["paradas", lossA], ["lentidão", lossP], ["defeitos", lossQ]].sort((x, y) => y[1] - x[1])[0];
+  f.push({ s: "info", title: `A maior perda de eficiência vem de <b>${big[0]}</b>.`, text: `Representa ${K.nf(1).format(big[1] * 100)} pontos dos ${K.nf(1).format((1 - a.OEE) * 100)} perdidos.` });
+  K.finds($("#q-finds"), f);
+}
+
+/* ============ CEP ============ */
+const A2 = 0.577, D4 = 2.114, d2 = 2.326;
+const BASE = LINES.map((_, li) => { const sg = spc.filter(s => s.line === li).slice(0, 25); const xbb = mean(sg.map(x => x.mean)), rb = mean(sg.map(x => x.range)); return { xbb, rb, ucl: xbb + A2 * rb, lcl: xbb - A2 * rb, rucl: D4 * rb }; });
+let spcLine = 0;
+function vCEP() {
+  if (state.line !== "all") spcLine = +state.line;
+  document.querySelectorAll("#c-line button").forEach(b => b.setAttribute("aria-pressed", String(+b.dataset.v === spcLine)));
+  const li = spcLine, L = LINES[li], c = L.carac, B = BASE[li], dec = c.dec, fx = (v) => K.nf(dec).format(v);
+  const sg = spc.filter(s => s.line === li && K.inRange(s.m) && inS(s));
+  const flags = sg.map(s => s.mean > B.ucl || s.mean < B.lcl ? 1 : 0);
+  let run = 0, side = 0; sg.forEach((s, i) => { const sd = s.mean > B.xbb ? 1 : -1; if (sd === side) run++; else { side = sd; run = 1; } if (run >= 8 && !flags[i]) flags[i] = 2; });
+  const n = sg.length, xbb = mean(sg.map(s => s.mean)), rb = mean(sg.map(s => s.range)), sig = rb / d2;
+  const indiv = sg.flatMap(s => s.vals), sAll = Math.sqrt(sum(indiv, v => (v - xbb) ** 2) / Math.max(1, indiv.length - 1));
+  const cpk = Math.min(c.lse - xbb, xbb - c.lie) / (3 * sig), ppk = Math.min(c.lse - xbb, xbb - c.lie) / (3 * sAll);
+  const outSpec = indiv.filter(v => v > c.lse || v < c.lie).length, nOut = flags.filter(f => f === 1).length;
+  const omIdx = Object.entries(sg.reduce((o, s, i) => { if (flags[i] === 1) o[s.m] = (o[s.m] || 0) + 1; return o; }, {})).sort((x, y) => y[1] - x[1]).slice(0, 2).map(x => +x[0]).sort((x, y) => x - y);
+  const omTxt = omIdx.length === 2 && MONTHS[omIdx[0]].y === MONTHS[omIdx[1]].y ? `${MONTHS[omIdx[0]].long.split(" de ")[0]} e ${MONTHS[omIdx[1]].long}` : K.joinE(omIdx.map(i => MONTHS[i].long));
+  const outMonths = {}; sg.forEach((s, i) => { if (flags[i] === 1) outMonths[s.m] = (outMonths[s.m] || 0) + 1; });
+  const om = Object.entries(outMonths).sort((x, y) => y[1] - x[1]).slice(0, 2).sort((x, y) => x[0] - y[0]).map(x => MONTHS[x[0]].long);
+  $("#c-spec").innerHTML = `Especificação do cliente: <b class="mono">${fx(c.nom)} ± ${fx(c.lse - c.nom)} ${c.un}</b>`;
+  const stable = nOut === 0;
+  K.headline($("#c-head"), { status: stable ? "ok" : (nOut / Math.max(1, n) > 0.1 ? "bad" : "warn"),
+    title: stable ? `${c.art} ${c.nome.toLowerCase()} ficou estável ${K.periodLabel()}: nenhuma amostra saiu da faixa normal.` : `${c.art} ${c.nome.toLowerCase()} saiu do controle em ${nOut} de ${n} amostras ${K.periodLabel()}.`,
+    text: stable ? `O processo é ${ppk >= 1.33 ? "capaz de atender à especificação com folga" : ppk >= 1 ? "capaz, mas com pouca folga" : "estável, mas não atende à especificação com segurança"} (Ppk ${K.nf(2).format(ppk)}).` : `As saídas se concentram em ${omTxt}. ${outSpec ? `${K.pl(outSpec, "peça medida ficou", "peças medidas ficaram")} fora do que o cliente aceita.` : "Nenhuma peça medida ficou fora da especificação, mas o processo já dá sinais antes de gerar refugo."}` });
+  K.kpis($("#c-kpis"), [
+    { label: "Amostras fora de controle", tip: "Médias que saíram da faixa normal do processo. Cada uma indica uma causa especial a investigar.", value: fN(nOut), target: `de ${fN(n)} amostras`, status: nOut === 0 ? "ok" : nOut / n > 0.1 ? "bad" : "warn", statusText: nOut === 0 ? "Estável" : "Instável" },
+    { label: "Capacidade real (Ppk)", tip: "Quanto o processo cabe dentro da especificação, considerando toda a variação do período. 1,33 ou mais é considerado capaz.", value: n ? K.nf(2).format(ppk) : "—", target: "Meta ≥ 1,33", status: statusOf(ppk, 1.33, true, 0.25) },
+    { label: "Capacidade potencial (Cpk)", tip: "Mesma conta do Ppk, mas usando só a variação dentro de cada amostra. Se for muito maior que o Ppk, o processo está mudando ao longo do tempo.", value: n ? K.nf(2).format(cpk) : "—", target: "Meta ≥ 1,33", status: nOut ? "neutral" : statusOf(cpk, 1.33, true, 0.25), statusText: nOut ? "Não confiável" : undefined },
+    { label: "Peças fora da especificação", tip: "Medições individuais fora dos limites aceitos pelo cliente, em partes por milhão.", value: n ? fN(outSpec / indiv.length * 1e6) : "—", unit: " ppm", target: `${fN(outSpec)} de ${fN(indiv.length)} medidas`, status: outSpec ? "bad" : "ok" },
+  ]);
+  const col = K.CC()[li], bad = css("--bad-mark"), warn = css("--warn-mark"), okc = css("--ok-mark");
+  K.legend($("#c-leg"), [{ label: "Média da amostra", color: col }, { label: "Fora da faixa", color: bad }, { label: "8 seguidas do mesmo lado", color: warn }, { label: "Faixa normal (limites de controle)", color: okc + "44", type: "band" }]);
+  const labels = sg.map(s => fDate(s.t).slice(0, 5));
+  const yr = [B.lcl, B.ucl, ...sg.map(s => s.mean)], pad = (Math.max(...yr) - Math.min(...yr)) * 0.08;
+  K.chart("c-xbar", "line", { labels, datasets: [
+    { label: "LSC", data: sg.map(() => B.ucl), borderColor: okc + "88", borderWidth: 1, pointRadius: 0, pointHoverRadius: 0, fill: "+1", backgroundColor: okc + "1c" },
+    { label: "LIC", data: sg.map(() => B.lcl), borderColor: okc + "88", borderWidth: 1, pointRadius: 0, pointHoverRadius: 0 },
+    { label: "Média", data: sg.map(s => s.mean), borderColor: col, borderWidth: 1.5, pointBackgroundColor: flags.map(f => f === 1 ? bad : f === 2 ? warn : col), pointBorderColor: flags.map(f => f === 1 ? bad : f === 2 ? warn : col), pointRadius: flags.map(f => f ? 4.5 : 2), pointHoverRadius: 6, tension: 0 },
+  ] }, { interaction: { mode: "nearest", axis: "x", intersect: false },
+    scales: { x: { ticks: { maxTicksLimit: 10 } }, y: { suggestedMin: Math.min(...yr) - pad, suggestedMax: Math.max(...yr) + pad, ticks: { maxTicksLimit: 7, callback: v => K.nf(dec).format(v) } } },
+    plugins: { rangeShade: { disabled: true }, refLines: { lines: [{ value: B.xbb, label: "Centro", dash: [], width: 1, color: okc }] },
+      tooltip: { filter: it => it.datasetIndex === 2, callbacks: { title: it => `${fDate(sg[it[0].dataIndex].t)} · turno ${SHIFTS[sg[it[0].dataIndex].shift]}`, label: it => ` Média: ${K.nf(dec + 1).format(it.parsed.y)} ${c.un}`, afterLabel: it => flags[it.dataIndex] === 1 ? " Fora da faixa normal" : flags[it.dataIndex] === 2 ? " 8ª amostra seguida do mesmo lado" : "" } } } });
+  const rFl = sg.map(s => s.range > B.rucl);
+  K.chart("c-r", "line", { labels, datasets: [{ label: "Amplitude", data: sg.map(s => s.range), borderColor: col, borderWidth: 1.2, pointRadius: rFl.map(f => f ? 4 : 1.5), pointBackgroundColor: rFl.map(f => f ? bad : col), pointBorderColor: rFl.map(f => f ? bad : col), tension: 0 }] },
+    { interaction: { mode: "nearest", axis: "x", intersect: false }, scales: { x: { ticks: { maxTicksLimit: 8 } }, y: { min: 0, ticks: { callback: v => K.nf(dec).format(v) } } }, plugins: { rangeShade: { disabled: true }, refLines: { lines: [{ value: B.rucl, label: "Limite" }, { value: B.rb, label: "Média", dash: [], width: 1 }] }, tooltip: { callbacks: { title: it => fDate(sg[it[0].dataIndex].t), label: it => ` ${K.nf(dec + 1).format(it.parsed.y)} ${c.un}` } } } });
+  const span = c.lse - c.lie, lo = c.lie - span * 0.25, w = span * 1.5 / 24, bins = new Array(24).fill(0);
+  indiv.forEach(v => { bins[clamp(Math.floor((v - lo) / w), 0, 23)]++; });
+  const ctr = bins.map((_, i) => lo + w * (i + .5));
+  K.chart("c-hist", "bar", { labels: ctr.map(v => K.nf(dec).format(v)), datasets: [{ data: bins, backgroundColor: ctr.map(v => v < c.lie || v > c.lse ? bad : col), borderRadius: 2, categoryPercentage: 1, barPercentage: .9 }] },
+    { scales: { x: { ticks: { maxTicksLimit: 6 } }, y: { ticks: { precision: 0 } } }, plugins: { rangeShade: { disabled: true }, tooltip: { callbacks: { title: it => `${K.nf(dec).format(ctr[it[0].dataIndex] - w / 2)} a ${K.nf(dec).format(ctr[it[0].dataIndex] + w / 2)} ${c.un}`, label: it => ` ${fN(it.parsed.y)} peças` } } } },
+    [{ id: "specLines", afterDatasetsDraw(ch) { const xs = ch.scales.x, cx = ch.ctx, a = ch.chartArea, p0 = xs.getPixelForValue(0), st = xs.getPixelForValue(1) - p0, px = v => p0 + ((v - lo) / w - .5) * st;
+      [[c.lie, "LIE", bad], [c.lse, "LSE", bad], [c.nom, "Nominal", css("--muted")]].forEach(([v, t, cl]) => { const x = px(v); cx.save(); cx.strokeStyle = cl; cx.lineWidth = 1.5; cx.setLineDash(t === "Nominal" ? [3, 3] : []); cx.beginPath(); cx.moveTo(x, a.top + 14); cx.lineTo(x, a.bottom); cx.stroke(); cx.setLineDash([]); cx.fillStyle = cl; cx.font = `600 11px ${Chart.defaults.font.family}`; cx.textAlign = "center"; cx.fillText(t, x, a.top + 9); cx.restore(); }); } }]);
+}
+document.addEventListener("click", e => { const b = e.target.closest("#c-line button"); if (!b) return; spcLine = +b.dataset.v; if (state.line !== "all" && +state.line !== spcLine) { state.line = String(spcLine); $("#f-line").value = state.line; } vCEP(); });
+
+/* ============ defeitos ============ */
+let defSel = null;
+function vDefeitos() {
+  const rows = rowsP(), p = pareto(rows), a = agg(rows);
+  if (!defSel || !p.find(x => x.name === defSel)) defSel = p[0]?.name;
+  const vital = p.filter(x => x.vital);
+  K.headline($("#d-head"), { status: a.rate > 0.025 ? "warn" : "ok",
+    title: `${vital.length} tipos de defeito respondem por ${fP(vital.length ? vital[vital.length - 1].cum : 0, 0)} das ${fN(a.defects)} ocorrências ${K.periodLabel()}.`,
+    text: p.length ? `Os principais são ${K.joinE(vital.slice(0, 3).map(x => `<b>${x.name.toLowerCase()}</b>`))}, que juntos somam ${fP(vital.slice(0, 3).slice(-1)[0].cum, 0)}. A taxa geral é de ${fN(a.rate * 100, 1)} defeitos a cada 100 peças.` : "" });
+  const acc = css("--accent"), muted = css("--line"), ink = css("--ink");
+  const wrap = (s) => { const o = []; let cur = ""; s.split(" ").forEach(w => { if ((cur + " " + w).trim().length > 13 && cur) { o.push(cur); cur = w; } else cur = (cur + " " + w).trim(); }); o.push(cur); return o; };
+  K.chart("d-pareto", "bar", { labels: p.map(x => x.name), datasets: [
+    { type: "line", label: "Acumulado", data: p.map(x => +(x.cum * 100).toFixed(1)), borderColor: ink, backgroundColor: ink, borderWidth: 2, pointRadius: 3, tension: 0, order: 0 },
+    { type: "bar", label: "Participação", data: p.map(x => +(x.share * 100).toFixed(1)), backgroundColor: p.map(x => x.vital ? acc : muted), borderColor: p.map(x => x.name === defSel ? ink : "transparent"), borderWidth: p.map(x => x.name === defSel ? 2 : 0), borderRadius: 5, borderSkipped: "start", order: 1 },
+  ] }, { onClick: (e, els, ch) => { const pts = ch.getElementsAtEventForMode(e, "index", { intersect: false }, true); if (pts.length) { defSel = p[pts[0].index].name; setTimeout(vDefeitos, 0); } },
+    onHover: (e, els) => { e.native.target.style.cursor = els.length ? "pointer" : "default"; },
+    scales: { x: { ticks: { autoSkip: false, font: { size: 10.5 }, callback: function (v) { return wrap(this.getLabelForValue(v)); } } }, y: { min: 0, max: 100, ticks: { callback: v => v + "%" } } },
+    plugins: { rangeShade: { disabled: true }, refLines: { lines: [{ value: 80, label: "80%" }] }, tooltip: { callbacks: { label: c => c.dataset.type === "line" ? ` Acumulado: ${K.nf(1).format(c.parsed.y)}%` : ` ${fN(p[c.dataIndex].n)} ocorrências (${K.nf(1).format(c.parsed.y)}%)` } } } });
+  // mapa de calor (sempre todas as linhas e turnos)
+  const base = prod.filter(r => K.inRange(r.m));
+  const cells = [0, 1, 2].map(l => [0, 1, 2].map(s => agg(base.filter(r => r.line === l && r.shift === s)).rate));
+  const fl = cells.flat(), mn = Math.min(...fl), mx = Math.max(...fl), ramp = K.seq();
+  const heat = $("#d-heat"); heat.style.gridTemplateColumns = "110px repeat(3, minmax(0, 1fr))";
+  heat.innerHTML = `<span></span>${SHIFTS.map(s => `<span class="hh">Turno ${s}</span>`).join("")}` + cells.map((row, l) => `<span class="hl">${LINES[l].curto}</span>${row.map((v, s) => { const k = mx === mn ? 0 : Math.round((v - mn) / (mx - mn) * 5); const on = (state.line === "all" || +state.line === l) && (state.shift === "all" || +state.shift === s); return `<span class="hc" style="background:${ramp[k]};color:${K.textOn(ramp[k])};${on ? "" : "opacity:.35"};min-height:54px" title="${LINES[l].curto}, turno ${SHIFTS[s]}">${K.nf(1).format(v * 100)}</span>`; }).join("")}`).join("");
+  $("#d-scale").innerHTML = `<span>menos</span><span class="ramp">${ramp.map(c => `<i style="background:${c}"></i>`).join("")}</span><span>mais defeitos</span>`;
+  $("#d-trend-t").textContent = `Evolução do defeito: ${defSel || "—"}`;
+  const all = prod.filter(r => inL(r) && inS(r));
+  const ser = MONTHS.map(mm => sum(all.filter(r => r.m === mm.i), r => { const k = LINES[r.line].defeitos.indexOf(defSel); return k >= 0 ? r.byType[k] : 0; }));
+  K.chart("d-trend", "bar", { labels: K.monthLabels(), datasets: [{ label: defSel, data: ser, backgroundColor: K.dim(MONTHS, () => acc), borderRadius: 5, maxBarThickness: 40 }] },
+    { plugins: { rangeShade: { disabled: true }, tooltip: { callbacks: { label: c => ` ${fN(c.parsed.y)} ocorrências` } } }, scales: { y: { beginAtZero: true, ticks: { precision: 0 } } } });
+}
+
+/* ============ ações (NC / PDCA) ============ */
+const STAGES = [["Planejar", "P"], ["Executar", "D"], ["Verificar", "C"], ["Agir", "A"]];
+let ncStatus = "all", ncQuery = "", ncSort = { k: "open", d: -1 };
+function vAcoes() {
+  const selN = ncs.filter(n => K.inRange(n.m) && inL(n)), open = ncs.filter(n => n.isOpen && inL(n)), late = open.filter(n => n.late), closed = selN.filter(n => !n.isOpen);
+  const onTime = closed.length ? closed.filter(n => !n.closedLate).length / closed.length : NaN, eff = closed.length ? 1 - closed.filter(n => n.reinc).length / closed.length : NaN;
+  K.headline($("#a-head"), { status: late.length ? "bad" : onTime < 0.9 ? "warn" : "ok",
+    title: late.length ? `${late.length} ${late.length > 1 ? "ações corretivas estão vencidas" : "ação corretiva está vencida"} e ${K.pl(open.length - late.length, "segue", "seguem")} dentro do prazo.` : `Nenhuma ação corretiva vencida. ${open.length === 0 ? "Não há ações em aberto." : K.pl(open.length, "segue dentro do prazo.", "seguem dentro do prazo.")}`,
+    text: `${K.periodLabel().charAt(0).toUpperCase() + K.periodLabel().slice(1)}, ${fP(onTime, 0)} das ações foram encerradas no prazo e ${fP(eff, 0)} resolveram o problema sem reincidência.` });
+  K.kpis($("#a-kpis"), [
+    { label: "Abertas agora", tip: "Não conformidades ainda em tratamento.", value: fN(open.length), target: `${fN(selN.length)} registradas no período` },
+    { label: "Vencidas", tip: "Abertas há mais tempo que o prazo da gravidade: 15 dias (crítica), 30 (maior) ou 45 (menor).", value: fN(late.length), target: "Meta: nenhuma", status: late.length ? (late.length > 2 ? "bad" : "warn") : "ok" },
+    { label: "Encerradas no prazo", tip: "Parte das não conformidades encerradas dentro do prazo, no período.", value: fN(onTime * 100, 0), unit: "%", target: "Meta ≥ 90%", status: statusOf(onTime, 0.9, true, 0.15) },
+    { label: "Eficácia das ações", tip: "Encerradas que não voltaram a acontecer. É o Verificar do PDCA medido.", value: fN(eff * 100, 0), unit: "%", target: "Meta ≥ 90%", status: statusOf(eff, 0.9, true, 0.05) },
+  ]);
+  $("#a-count").textContent = `${open.length} abertas`;
+  const gp = { "Menor": "", "Maior": "warn", "Crítica": "bad" };
+  $("#a-board").innerHTML = STAGES.map(([st, l]) => { const items = open.filter(n => n.stage === st).sort((a, b) => a.prazo - b.prazo);
+    return `<div class="col"><div class="col-h"><b><span class="lt">${l}</span>${st}</b><span>${items.length}</span></div>${items.map(n => `<div class="nc${n.late ? " late" : ""}"><div class="nc-top"><span class="mono">${n.code}</span><span class="pill ${gp[n.grav]}">${n.grav}</span></div><p>${esc(n.desc)}</p><div class="nc-meta"><span>${LINES[n.line].id} · ${esc(n.area)}</span><span>${n.late ? `<b style="color:var(--bad)">venceu em ${fDate(n.prazo)}</b>` : `prazo ${fDate(n.prazo)}`}</span></div></div>`).join("") || `<div class="empty">Nada nesta etapa.</div>`}</div>`; }).join("");
+  const c6 = CAUSAS.map(cz => ({ cz, n: selN.filter(n => n.causa === cz).length })).sort((a, b) => b.n - a.n);
+  K.chart("a-6m", "bar", { labels: c6.map(x => x.cz), datasets: [{ data: c6.map(x => x.n), backgroundColor: c6.map((_, i) => i === 0 ? css("--accent") : css("--seq-2")), borderRadius: 5, maxBarThickness: 22 }] },
+    { indexAxis: "y", interaction: { mode: "nearest", axis: "y", intersect: false }, scales: { x: { beginAtZero: true, grid: { color: css("--line-2") }, ticks: { precision: 0 } }, y: { grid: { display: false }, border: { display: false }, ticks: { color: css("--ink-2") } } }, plugins: { rangeShade: { disabled: true }, tooltip: { callbacks: { label: c => ` ${c.parsed.x} não conformidades · área: ${AREA[c6[c.dataIndex].cz]}` } } } });
+  const og = ORIGENS.map((o, i) => ({ o, i, n: selN.filter(n => n.origem === o).length })).sort((a, b) => b.n - a.n), cc = K.CC();
+  K.chart("a-orig", "bar", { labels: og.map(x => x.o), datasets: [{ data: og.map(x => x.n), backgroundColor: og.map(x => x.o === "Reclamação de cliente" ? css("--bad-mark") : css("--seq-4")), borderRadius: 5, maxBarThickness: 22 }] },
+    { indexAxis: "y", interaction: { mode: "nearest", axis: "y", intersect: false }, scales: { x: { beginAtZero: true, grid: { color: css("--line-2") }, ticks: { precision: 0 } }, y: { grid: { display: false }, border: { display: false }, ticks: { color: css("--ink-2") } } }, plugins: { rangeShade: { disabled: true }, tooltip: { callbacks: { label: c => ` ${c.parsed.x} não conformidades` } } } });
+  ncTable();
+}
+function ncTable() {
+  let rows = ncs.filter(n => K.inRange(n.m) && inL(n));
+  if (ncStatus === "open") rows = rows.filter(n => n.isOpen); else if (ncStatus === "late") rows = rows.filter(n => n.late); else if (ncStatus === "closed") rows = rows.filter(n => !n.isOpen);
+  const q = ncQuery.trim().toLowerCase(); if (q) rows = rows.filter(n => [n.code, n.desc, n.area, n.origem, n.causa, n.stage].join(" ").toLowerCase().includes(q));
+  $("#a-all-n").textContent = `${rows.length} registros`;
+  document.querySelectorAll("#a-status button").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.v === ncStatus)));
+  const gp = { "Menor": "", "Maior": "warn", "Crítica": "bad" }, go = { "Menor": 0, "Maior": 1, "Crítica": 2 };
+  rows = rows.map(n => ({ ...n, gO: go[n.grav], lineN: LINES[n.line].id }));
+  K.sortableTable($("#a-table"), [["code", "Código"], ["open", "Abertura"], ["lineN", "Linha"], ["gO", "Gravidade"], ["desc", "Descrição"], ["area", "Área"], ["stage", "Situação"], ["age", "Dias", 1]], rows, ncSort,
+    n => `<tr><td class="mono">${n.code}</td><td class="num">${fDate(n.open)}</td><td>${n.lineN}</td><td><span class="pill ${gp[n.grav]}">${n.grav}</span></td><td>${esc(n.desc)}<br><span class="sub-txt">Causa: ${n.causa} · ${n.origem}${n.reinc ? " · reincidente" : ""}</span></td><td>${esc(n.area)}</td><td>${n.isOpen ? (n.late ? `<span class="pill bad">Vencida · ${n.stage}</span>` : `<span class="pill acc">${n.stage}</span>`) : `<span class="pill ok">Encerrada${n.closedLate ? " com atraso" : ""}</span>`}</td><td class="r">${n.age}</td></tr>`);
+}
+document.addEventListener("click", e => { const b = e.target.closest("#a-status button"); if (b) { ncStatus = b.dataset.v; ncTable(); } });
+document.addEventListener("input", e => { if (e.target.id === "a-search") { ncQuery = e.target.value; ncTable(); } });
+document.addEventListener("resort", e => { if (e.target.id === "a-table") ncTable(); }, true);
+
+const tp = $("#tpl-sobre").content; tp.querySelector("#ab-p").textContent = fN(prod.length); tp.querySelector("#ab-s").textContent = fN(spc.length); tp.querySelector("#ab-n").textContent = fN(ncs.length);
+K.shell({
+  key: "rotalume-qual", title: "Qualidade", company: "Grupo Rotalume · empresa fictícia", asOf: "31/10/2026",
+  accent: ["#3a56d4", "#8ea2ff", "#e6eafc", "#1e2650"],
+  logo: `<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v5c0 4.5-3 8.2-7 10-4-1.8-7-5.5-7-10V6z"/><path d="M8.5 12l2.5 2.5L16 9.5"/></svg>`,
+  footer: "Projeto de portfólio de Breno Silva · Rotalume é uma empresa fictícia e todos os dados são simulados.",
+  filters: [
+    { id: "line", label: "Linha", options: [["all", "Todas"], ...LINES.map((l, i) => [String(i), l.curto])] },
+    { id: "shift", label: "Turno", options: [["all", "Todos"], ...SHIFTS.map((s, i) => [String(i), "Turno " + s])] },
+  ],
+  views: [
+    { id: "resumo", label: "Visão geral", icon: "home", desc: "Eficiência, qualidade e custo", heading: "Visão geral da qualidade", sub: "Eficiência das linhas, peças boas e custo da má qualidade", render: vResumo },
+    { id: "cep", label: "Estabilidade", icon: "pulse", desc: "Controle estatístico (CEP)", heading: "Estabilidade do processo", sub: "O processo está sob controle e atende ao cliente?", hideFilters: ["line"], render: vCEP },
+    { id: "defeitos", label: "Defeitos", icon: "bars", desc: "Pareto, linhas e turnos", heading: "Defeitos", sub: "Quais defeitos atacar primeiro e onde eles acontecem", render: vDefeitos },
+    { id: "acoes", label: "Ações corretivas", icon: "cycle", desc: "Não conformidades no PDCA", heading: "Ações corretivas", sub: "Não conformidades em tratamento, prazos e eficácia", hideFilters: ["shift"], render: vAcoes },
+    { id: "sobre", label: "Sobre os dados", icon: "book", desc: "Fórmulas e premissas", heading: "Sobre os dados", sub: "Como o painel foi construído", noFilters: true },
+  ],
+});
+window.__q = { prod, spc, ncs, agg, BASE };
+})();
+
+</script>
+</body>
+</html>
