@@ -13,14 +13,14 @@ html, body { margin: 0; height: 100%; }
 [hidden] { display: none !important; }
 /* Layout: menu lateral escuro com as guias; área principal com manchete em linguagem simples, 4 indicadores com meta e status, gráficos grandes com 12 meses de contexto e detalhes recolhidos. */
 :root {
-  --bg: #f2f4f6;
-  --surface: #ffffff;
-  --surface-2: #f6f8fa;
-  --ink: #121821;
-  --ink-2: #485260;
-  --muted: #778190;
-  --line: #e1e5ea;
-  --line-2: #eef1f4;
+  --bg: #f5f0e3;
+  --surface: #fffdf6;
+  --surface-2: #efe5cf;
+  --ink: #1c1710;
+  --ink-2: #6b6251;
+  --muted: #948a73;
+  --line: #e3d7ba;
+  --line-2: #ece1c6;
   --side-bg: #111a24;
   --side-ink: #e8edf2;
   --side-muted: #8d9aa8;
@@ -29,9 +29,9 @@ html, body { margin: 0; height: 100%; }
   --accent-ink: #ffffff;
   --accent-soft: var(--a-soft-light);
   --c1: #2a78d6; --c2: #eb6834; --c3: #1baf7a; --c4: #eda100; --c5: #e87ba4; --c6: #6250d6;
-  --ok: #0b7d3e; --ok-bg: #e2f4e9; --ok-mark: #1a9e55;
-  --warn: #8a5a00; --warn-bg: #fcf0d4; --warn-mark: #e0a00e;
-  --bad: #b3261e; --bad-bg: #fbe5e3; --bad-mark: #d93a30;
+  --ok: #0b7d3e; --ok-bg: #dcf0e1; --ok-mark: #1a9e55;
+  --warn: #8a5a00; --warn-bg: #f8e3a8; --warn-mark: #e0a00e;
+  --bad: #b3261e; --bad-bg: #f7dcd6; --bad-mark: #d93a30;
   --seq-1: #e3edfb; --seq-2: #bcd4f5; --seq-3: #8db6ee; --seq-4: #5a93e2; --seq-5: #2f6fc9; --seq-6: #1b4f99;
   --font: "Onest", "Segoe UI", system-ui, -apple-system, sans-serif;
   --mono: "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
@@ -257,6 +257,7 @@ details.more > .more-in { padding: 0 18px 18px; display: flex; flex-direction: c
   .headline { grid-template-columns: minmax(0, 1fr); }
   .headline .hi { display: none; }
   .field select { max-width: 160px; }
+  .theme-seg button { padding: 5px 8px; font-size: 12px; }
 }
 @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
 
@@ -481,6 +482,15 @@ const K = (() => {
     MONTHS.slice().reverse().forEach(m => o.push([`${m.i}-${m.i}`, m.long.charAt(0).toUpperCase() + m.long.slice(1)]));
     return o;
   }
+  const THEME_KEY = "rl-theme";
+  function applyTheme(pref) {
+    if (pref === "light" || pref === "dark") document.documentElement.setAttribute("data-theme", pref);
+    else document.documentElement.removeAttribute("data-theme");
+    document.querySelectorAll('[data-theme-opt]').forEach(b => b.setAttribute("aria-pressed", String(b.dataset.themeOpt === pref)));
+  }
+  let themePref = "system";
+  try { themePref = localStorage.getItem(THEME_KEY) || "system"; } catch (e) { /* sem armazenamento */ }
+  applyTheme(themePref);
   function shell(cfg) {
     CFG = cfg;
     document.documentElement.style.setProperty("--a-light", cfg.accent[0]);
@@ -504,6 +514,11 @@ const K = (() => {
           <div class="filters" id="filters">
             <div class="field"><label for="f-period">Período</label><select id="f-period">${periodOptions().map(([v, l]) => `<option value="${v}">${l}</option>`).join("")}</select></div>
             ${(cfg.filters || []).map(f => `<div class="field"><label for="f-${f.id}">${f.label}</label><select id="f-${f.id}">${f.options.map(([v, l]) => `<option value="${v}">${l}</option>`).join("")}</select></div>`).join("")}
+            <div class="seg theme-seg" id="theme-seg" role="group" aria-label="Tema">
+              <button type="button" data-theme-opt="system">Sistema</button>
+              <button type="button" data-theme-opt="light">Claro</button>
+              <button type="button" data-theme-opt="dark">Escuro</button>
+            </div>
           </div>
         </div></header>
         <main class="content" id="content"></main>
@@ -515,6 +530,13 @@ const K = (() => {
     $(".nav").addEventListener("click", e => { const b = e.target.closest("button[data-v]"); if (b) go(b.dataset.v, true); });
     $("#f-period").addEventListener("change", e => { const [a, b] = e.target.value.split("-").map(Number); state.from = a; state.to = b; changed(); });
     (cfg.filters || []).forEach(f => $("#f-" + f.id).addEventListener("change", e => { state[f.id] = e.target.value; changed(); }));
+    applyTheme(themePref);
+    $("#theme-seg").addEventListener("click", e => {
+      const b = e.target.closest("button[data-theme-opt]"); if (!b) return;
+      themePref = b.dataset.themeOpt;
+      try { localStorage.setItem(THEME_KEY, themePref); } catch (err) { /* ignora */ }
+      applyTheme(themePref);
+    });
     window.addEventListener("hashchange", () => go(location.hash.slice(1), false));
     const rerender = () => render();
     try { matchMedia("(prefers-color-scheme: dark)").addEventListener("change", rerender); } catch (e) { /* antigo */ }
@@ -535,8 +557,8 @@ const K = (() => {
     state.view = v.id;
     CFG.views.forEach(x => { $("#view-" + x.id).hidden = x.id !== v.id; const b = $("#nav-" + x.id); if (x.id === v.id) b.setAttribute("aria-current", "page"); else b.removeAttribute("aria-current"); });
     $("#v-title").textContent = v.heading || v.label; $("#v-sub").textContent = v.sub || "";
-    $("#filters").hidden = !!v.noFilters;
-    (CFG.filters || []).forEach(f => { $("#f-" + f.id).closest(".field").hidden = (v.hideFilters || []).includes(f.id); });
+    document.querySelectorAll("#filters .field").forEach(f => { f.hidden = !!v.noFilters; });
+    (CFG.filters || []).forEach(f => { $("#f-" + f.id).closest(".field").hidden = !!v.noFilters || (v.hideFilters || []).includes(f.id); });
     if (push) { try { history.replaceState(null, "", "#" + v.id); } catch (e) { location.hash = v.id; } window.scrollTo({ top: 0 }); }
     render();
   }
