@@ -88,7 +88,7 @@ export default function Acoes() {
 
       <div className="grade g2">
         <Card titulo="Qual a causa raiz mais comum?" sub="Não conformidades do período pelos 6M (método, máquina, mão de obra, material, medição e meio ambiente).">
-          <Grafico rotulo="Causas raiz pelos 6M" altura={250}>
+          <Grafico semDados={!selN.length} vazio="Nenhuma não conformidade aberta neste recorte." rotulo="Causas raiz pelos 6M" altura={250}>
             <BarChart data={c6} layout="vertical" margin={{ top: 4, right: 24, bottom: 0, left: 8 }}>
               <CartesianGrid horizontal={false} />
               <XAxis type="number" allowDecimals={false} tickLine={false} axisLine={false} />
@@ -101,7 +101,7 @@ export default function Acoes() {
           </Grafico>
         </Card>
         <Card titulo="De onde vêm as não conformidades?" sub="Em vermelho, as que chegaram pelo cliente: são as que mais custam para a imagem da empresa.">
-          <Grafico rotulo="Origem das não conformidades" altura={250}>
+          <Grafico semDados={!selN.length} vazio="Nenhuma não conformidade aberta neste recorte." rotulo="Origem das não conformidades" altura={250}>
             <BarChart data={og} layout="vertical" margin={{ top: 4, right: 24, bottom: 0, left: 8 }}>
               <CartesianGrid horizontal={false} />
               <XAxis type="number" allowDecimals={false} tickLine={false} axisLine={false} />

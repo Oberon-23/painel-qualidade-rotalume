@@ -368,3 +368,9 @@ td .fraco { display: block; }
   body { background: #fff; }
   .card { box-shadow: none; break-inside: avoid; }
 }
+
+/* gráfico sem dados e nota abaixo do gráfico */
+.graf-vazio { display: grid; place-items: center; border: 1px dashed var(--line-2); border-radius: 10px; }
+.graf-vazio p { margin: 0; max-width: 34ch; text-align: center; color: var(--muted); font-size: 14px; }
+.nota-grafico { margin: 10px 0 0; font-size: 13px; color: var(--ink-2); }
+.carregando { margin: 40px 0; text-align: center; color: var(--muted); }

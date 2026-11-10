@@ -1,5 +1,7 @@
 # Painel de Qualidade e Processos — Rotalume Indústria
 
+[![CI](https://github.com/Oberon-23/painel-qualidade-rotalume/actions/workflows/ci.yml/badge.svg)](https://github.com/Oberon-23/painel-qualidade-rotalume/actions/workflows/ci.yml)
+
 > Dashboard interativo de qualidade industrial de uma fábrica **fictícia** (Rotalume Indústria), em React + TypeScript, sem backend. Traz OEE, Controle Estatístico de Processo (CEP) e um quadro de ações corretivas no padrão PDCA.
 
 ![Visão geral](docs/img/qualidade_visao_geral.png)
@@ -38,6 +40,7 @@ Aplicação estática feita com Vite. Na Vercel, basta importar o repositório: 
 npm install
 npm run dev       # desenvolvimento
 npm run build     # gera dist/
+npm test          # testes dos cálculos
 ```
 
 A versão anterior, em HTML puro com Chart.js, está preservada em `legado.html`.

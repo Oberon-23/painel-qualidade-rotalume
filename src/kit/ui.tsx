@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { Suspense, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import { AlertTriangle, CheckCircle2, Flag, Info, Monitor, Moon, Sun } from 'lucide-react';
 import { STATUS_TXT, type Status } from './formato';
@@ -102,7 +102,7 @@ export function Moldura({ produto, icone, visoes, asOf, rodape }: {
         </div>
       </div>
       <main id="conteudo">
-        <Outlet />
+        <Suspense fallback={<p className="carregando" role="status">Carregando…</p>}><Outlet /></Suspense>
       </main>
       <footer className="rodape">
         <span>{rodape}</span>

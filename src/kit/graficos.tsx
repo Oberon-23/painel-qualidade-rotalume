@@ -33,7 +33,10 @@ export function useCores(): Cores {
 }
 
 /** Contêiner com altura fixa e largura do cartão. */
-export function Grafico({ altura = 280, rotulo, children }: { altura?: number; rotulo: string; children: ReactNode }) {
+export function Grafico({ altura = 280, rotulo, children, semDados = false, vazio = 'Sem dados suficientes neste recorte. Amplie o período ou retire um filtro.' }: {
+  altura?: number; rotulo: string; children: ReactNode; semDados?: boolean; vazio?: string;
+}) {
+  if (semDados) return <div className="graf graf-vazio" style={{ height: altura }}><p>{vazio}</p></div>;
   return (
     <div className="graf" role="img" aria-label={rotulo} style={{ height: altura }}>
       <ResponsiveContainer width="100%" height="100%" debounce={60}>

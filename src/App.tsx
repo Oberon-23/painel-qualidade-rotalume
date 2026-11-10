@@ -1,13 +1,14 @@
+import { lazy } from 'react';
 import { Navigate, Route, Routes } from 'react-router-dom';
 import { Activity, BarChart3, BookOpen, House, RefreshCcw, ShieldCheck } from 'lucide-react';
 import { FiltrosProvider, useFiltros, type DefFiltro } from './kit/filtros';
 import { Moldura, type Visao } from './kit/ui';
 import { LINES, SHIFTS, type Filtro } from './dados';
-import Resumo from './telas/Resumo';
-import Estabilidade from './telas/Estabilidade';
-import Defeitos from './telas/Defeitos';
-import Acoes from './telas/Acoes';
-import Sobre from './telas/Sobre';
+const Resumo = lazy(() => import('./telas/Resumo'));
+const Estabilidade = lazy(() => import('./telas/Estabilidade'));
+const Defeitos = lazy(() => import('./telas/Defeitos'));
+const Acoes = lazy(() => import('./telas/Acoes'));
+const Sobre = lazy(() => import('./telas/Sobre'));
 
 const FILTROS: DefFiltro[] = [
   { id: 'linha', label: 'Linha', options: [['all', 'Todas'], ...LINES.map((l, i) => [String(i), l.curto] as [string, string])] },
