@@ -1,6 +1,6 @@
 # Painel de Qualidade e Processos — Rotalume Indústria
 
-> Dashboard interativo de qualidade industrial de uma fábrica **fictícia** (Rotalume Indústria), em HTML/CSS/JS puro, sem backend. Traz OEE, Controle Estatístico de Processo (CEP) e um quadro de ações corretivas no padrão PDCA.
+> Dashboard interativo de qualidade industrial de uma fábrica **fictícia** (Rotalume Indústria), em React + TypeScript, sem backend. Traz OEE, Controle Estatístico de Processo (CEP) e um quadro de ações corretivas no padrão PDCA.
 
 ![Visão geral](docs/img/qualidade_visao_geral.png)
 
@@ -21,7 +21,7 @@
 - **Pareto + diagrama de Ishikawa (6M)**: metodologia clássica de análise de causa raiz — identifica os poucos defeitos que concentram 80% das ocorrências e depois classifica a causa por Método, Máquina, Mão de obra, Material, Medição e Meio ambiente.
 - **Quadro PDCA**: as ações corretivas seguem o ciclo Planejar → Executar → Verificar → Agir, alinhado à ISO 9001:2015, cláusula 10.2.
 - **Eventos simulados nos dados** (desgaste de ferramenta, equipe nova sem padronização, umidade afetando pintura): testam se os indicadores conseguem de fato detectar os problemas que foram colocados de propósito.
-- **Arquivo único, sem build**: HTML/CSS/JS em um só arquivo (`index.html`), dados sintéticos gerados no navegador (semente fixa) e gráficos via Chart.js por CDN — publicável em qualquer hospedagem estática.
+- **React + TypeScript com dados gerados no navegador**: os dados sintéticos são criados no próprio navegador (semente fixa, reprodutível) e a aplicação é publicada como site estático, sem backend. Cada tela abre com uma manchete que diz o resultado em uma frase, antes dos gráficos.
 
 ![Quadro de ações corretivas](docs/img/qualidade_acoes.png)
 
@@ -31,20 +31,20 @@ Todos os dados são fictícios, gerados no navegador ao carregar a página. Os e
 
 ## Deploy
 
-Projeto 100% estático — basta apontar a hospedagem para a raiz do repositório.
+Aplicação estática feita com Vite. Na Vercel, basta importar o repositório: o framework é detectado sozinho (build `npm run build`, saída `dist/`). O `vercel.json` redireciona as rotas para o `index.html`, então links diretos como `/estabilidade` funcionam.
 
-**Vercel:**
+**Localmente:**
 ```bash
-npm i -g vercel   # se ainda não tiver
-vercel --prod
+npm install
+npm run dev       # desenvolvimento
+npm run build     # gera dist/
 ```
-Ou: importar o repositório direto em [vercel.com/new](https://vercel.com/new) — nenhuma configuração de build é necessária (é um `index.html` puro).
 
-**Localmente:** abra `index.html` no navegador, ou sirva com qualquer servidor estático (`npx serve .`).
+A versão anterior, em HTML puro com Chart.js, está preservada em `legado.html`.
 
 ## Stack
 
-HTML5, CSS3 (custom properties para tema claro/escuro), JavaScript (ES6+), [Chart.js 4.4.1](https://www.chartjs.org/).
+React 19 + TypeScript, Vite, React Router, [Recharts](https://recharts.org/) e ícones Lucide. O tema claro/escuro usa variáveis CSS e os gráficos leem as mesmas cores, então mudam junto com o tema. Os filtros ficam salvos no navegador. A identidade visual é compartilhada com os outros painéis da Rotalume.
 
 ## Referências
 
