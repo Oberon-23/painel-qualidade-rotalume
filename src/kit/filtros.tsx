@@ -8,6 +8,8 @@ type Ctx = {
   setPeriodo: (p: Periodo) => void;
   valor: (id: string) => string;
   setValor: (id: string, v: string) => void;
+  /** volta período e filtros ao padrão (12 meses, todos) */
+  limpar: () => void;
   defs: DefFiltro[];
 };
 
@@ -38,6 +40,7 @@ export function FiltrosProvider({ chave, defs, children }: { chave: string; defs
     periodo, setPeriodo, defs,
     valor: (id) => valores[id],
     setValor: (id, v) => setValores((o) => ({ ...o, [id]: v })),
+    limpar: () => { setPeriodo({ from: 0, to: 11 }); setValores(Object.fromEntries(defs.map((d) => [d.id, d.options[0][0]]))); },
   }), [periodo, valores, defs]);
   return <FiltrosCtx.Provider value={ctx}>{children}</FiltrosCtx.Provider>;
 }

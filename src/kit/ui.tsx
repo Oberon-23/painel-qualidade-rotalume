@@ -1,4 +1,4 @@
-import { Suspense, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { Component, Suspense, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import { AlertTriangle, CheckCircle2, Flag, Info, Monitor, Moon, Sun } from 'lucide-react';
 import { STATUS_TXT, type Status } from './formato';
@@ -51,9 +51,10 @@ export function Moldura({ produto, icone, visoes, asOf, rodape }: {
 }) {
   const { pathname } = useLocation();
   const atual = visoes.find((v) => v.path === pathname) ?? visoes[0];
-  const { periodo, setPeriodo, defs, valor, setValor } = useFiltros();
+  const { periodo, setPeriodo, defs, valor, setValor, limpar } = useFiltros();
   const mostra = (id: string) => atual.filtros === undefined || atual.filtros === 'todos' || (Array.isArray(atual.filtros) && atual.filtros.includes(id));
   const semFiltros = atual.filtros === 'nenhum';
+  const filtrado = !semFiltros && ((!atual.semPeriodo && (periodo.from !== 0 || periodo.to !== 11)) || defs.some((d) => mostra(d.id) && valor(d.id) !== d.options[0][0]));
 
   useEffect(() => { document.title = `${atual.label} · ${produto} · Rotalume`; window.scrollTo({ top: 0 }); }, [atual, produto]);
 
@@ -97,12 +98,13 @@ export function Moldura({ produto, icone, visoes, asOf, rodape }: {
                   </select>
                 </label>
               ))}
+              {filtrado ? <button type="button" className="limpar" onClick={limpar}>Limpar filtros</button> : null}
             </div>
           )}
         </div>
       </div>
       <main id="conteudo">
-        <Suspense fallback={<p className="carregando" role="status">Carregando…</p>}><Outlet /></Suspense>
+        <ProtecaoErro chave={pathname}><Suspense fallback={<p className="carregando" role="status">Carregando…</p>}><Outlet /></Suspense></ProtecaoErro>
       </main>
       <footer className="rodape">
         <span>{rodape}</span>
@@ -330,8 +332,10 @@ export function MapaCalor({ linhas, colunas, valores, fmt, ativo, titulo }: {
   return (
     <>
       <div className="calor" role="table" aria-label={titulo} style={{ gridTemplateColumns: `minmax(90px, auto) repeat(${colunas.length}, minmax(0, 1fr))` }}>
-        <span />
-        {colunas.map((c) => <span key={c} className="hh" role="columnheader">{c}</span>)}
+        <div role="row" style={{ display: 'contents' }}>
+          <span role="columnheader"><span className="sr">Linha</span></span>
+          {colunas.map((c) => <span key={c} className="hh" role="columnheader">{c}</span>)}
+        </div>
         {linhas.map((l, i) => (
           <div key={l} role="row" style={{ display: 'contents' }}>
             <span className="hl" role="rowheader">{l}</span>
@@ -340,7 +344,7 @@ export function MapaCalor({ linhas, colunas, valores, fmt, ativo, titulo }: {
               const k = nivel(v);
               return (
                 <span key={c} role="cell" className={`hc${ativo && !ativo(i, j) ? ' fora' : ''}`} title={`${l}, ${c}: ${fmt(v)}`}
-                  style={{ background: `var(--seq-${k + 1 > 6 ? 6 : k + 1})`, color: k >= 3 ? 'var(--surface)' : 'var(--ink)' }}>
+                  style={{ background: `var(--seq-${Math.min(6, k + 1)})`, color: `var(--seq-ink-${Math.min(6, k + 1)})` }}>
                   {fmt(v)}
                 </span>
               );
@@ -355,4 +359,20 @@ export function MapaCalor({ linhas, colunas, valores, fmt, ativo, titulo }: {
       </div>
     </>
   );
+}
+
+/** Se uma tela quebrar, mostra um aviso no lugar dela em vez de deixar a página em branco. */
+class ProtecaoErro extends Component<{ chave: string; children: ReactNode }, { erro: boolean; chave: string }> {
+  state = { erro: false, chave: this.props.chave };
+  static getDerivedStateFromError() { return { erro: true }; }
+  static getDerivedStateFromProps(p: { chave: string }, s: { erro: boolean; chave: string }) { return p.chave !== s.chave ? { erro: false, chave: p.chave } : null; }
+  render() {
+    if (!this.state.erro) return this.props.children;
+    return (
+      <div className="erro-tela" role="alert">
+        <h2>Esta tela não carregou.</h2>
+        <p>Tente limpar os filtros ou recarregar a página. As outras telas continuam funcionando.</p>
+      </div>
+    );
+  }
 }
