@@ -2,3 +2,5 @@ node_modules
 dist
 *.tsbuildinfo
 .vercel
+test-results
+playwright-report

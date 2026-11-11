@@ -47,7 +47,16 @@ A versão anterior, em HTML puro com Chart.js, está preservada em `legado.html`
 
 ## Stack
 
-React 19 + TypeScript, Vite, React Router, [Recharts](https://recharts.org/) e ícones Lucide. O tema claro/escuro usa variáveis CSS e os gráficos leem as mesmas cores, então mudam junto com o tema. Os filtros ficam salvos no navegador. A identidade visual é compartilhada com os outros painéis da Rotalume.
+React 19 + TypeScript, Vite, React Router e ícones Lucide. Os gráficos são SVG próprio, sem biblioteca (o painel caiu de cerca de 740 KB para 330 KB e passou de 64–73 para 95–98 no Lighthouse do celular); as dicas funcionam com mouse, toque e setas do teclado. O tema claro/escuro usa variáveis CSS e os gráficos leem as mesmas cores, então mudam junto com o tema. Os filtros ficam salvos no navegador. A identidade visual é compartilhada com os outros painéis da Rotalume.
+
+## Testes
+
+- `npm test`: regras de cálculo (OEE, CEP, Pareto) e a ligação com o SGQ.
+- `npm run e2e` (depois do build): as cinco telas no computador e no celular, sem erro no console nem rolagem lateral; filtros salvos; dicas dos gráficos com mouse e teclado; clique no Pareto; troca de característica no CEP; busca e links para o SGQ; tema escuro; acessibilidade (WCAG 2.1 AA) no tema claro e no escuro. Roda no CI a cada envio, com os mesmos cabeçalhos de segurança da Vercel.
+
+## Ligação com o SGQ Rotalume
+
+As não conformidades que aparecem com **Ver no SGQ** são as mesmas do [SGQ Rotalume](https://sqgrotalume.vercel.app): mesmo código, assunto, linha e etapa. O painel mostra o quadro geral; o SGQ, o tratamento de cada uma (5 porquês, plano de ação, eficácia). A lista fica em `NO_SGQ`, em `src/dados.ts`, e um teste garante que ela continua valendo.
 
 ## Referências
 

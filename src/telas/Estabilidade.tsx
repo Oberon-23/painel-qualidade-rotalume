@@ -1,12 +1,11 @@
 import { useEffect, useState } from 'react';
-import { Area, Bar, BarChart, CartesianGrid, Cell, ComposedChart, Line, ReferenceLine, Scatter, Tooltip, XAxis, YAxis } from 'recharts';
 import { useFiltro } from '../App';
 import { BASE, d2, LINES, SHIFTS, spc } from '../dados';
 import { useFiltros } from '../kit/filtros';
 import { clamp, fDate, fN, joinE, mean, nf, pl, statusOf, sum } from '../kit/formato';
 import { MONTHS, periodLabel } from '../kit/meses';
 import { Card, Kpis, Legenda, Manchete, Segmentado } from '../kit/ui';
-import { CaixaTt, eixoX, eixoY, grade, Grafico, margem, useCores } from '../kit/graficos';
+import { escala, Grafico, useCores } from '../kit/graficos';
 
 export default function Estabilidade() {
   const f = useFiltro();
@@ -48,7 +47,10 @@ export default function Estabilidade() {
   const span = c.lse - c.lie, lo = c.lie - span * 0.25, w = (span * 1.5) / 24, bins = new Array(24).fill(0);
   indiv.forEach((v) => { bins[clamp(Math.floor((v - lo) / w), 0, 23)]++; });
   const hist = bins.map((q, i) => { const ctr = lo + w * (i + 0.5); return { x: ctr, rot: fx(ctr), n: q, fora: ctr < c.lie || ctr > c.lse }; });
-  const posBin = (v: number) => hist[clamp(Math.floor((v - lo) / w), 0, 23)].rot;
+  /** posição (em barras) de um valor no histograma, para as linhas LIE, LSE e nominal */
+  const posBin = (v: number) => clamp((v - lo) / w, 0, 24);
+  const yX = escala(Math.min(...yr) - pad, Math.max(...yr) + pad, 6);
+  const yXd = { min: Math.min(...yr) - pad, max: Math.max(...yr) + pad, ticks: yX.ticks.filter((t) => t >= Math.min(...yr) - pad && t <= Math.max(...yr) + pad), fmt: fx, largura: 60 };
 
   return (
     <>
@@ -82,64 +84,39 @@ export default function Estabilidade() {
           { label: '8 seguidas do mesmo lado', cor: cor.warn },
           { label: 'Faixa normal (limites de controle)', cor: cor.good, tipo: 'faixa' },
         ]} />
-        <Grafico rotulo="Carta de controle das médias" altura={320}>
-          <ComposedChart data={pontos} margin={margem}>
-            <CartesianGrid {...grade} />
-            <XAxis dataKey="dia" {...eixoX} minTickGap={28} />
-            <YAxis {...eixoY} width={60} domain={[Math.min(...yr) - pad, Math.max(...yr) + pad]} tickFormatter={fx} tickCount={7} />
-            <Area dataKey="faixa" stroke={cor.good} strokeOpacity={0.5} fill={cor.good} fillOpacity={0.1} isAnimationActive={false} activeDot={false} />
-            <ReferenceLine y={B.xbb} stroke={cor.good} label={{ value: 'Centro', position: 'insideTopRight' }} />
-            <Line dataKey="media" stroke={cor.serie[li]} strokeWidth={1.5} dot={false} activeDot={{ r: 5 }} isAnimationActive={false} />
-            <Scatter dataKey="fora" fill={cor.bad} isAnimationActive={false} />
-            <Scatter dataKey="seq" fill={cor.warn} isAnimationActive={false} />
-            <Tooltip content={({ active, payload }) => {
-              if (!active || !payload?.length) return null;
-              const p = payload[0].payload as (typeof pontos)[number];
-              return <CaixaTt titulo={`${p.data} · turno ${p.turno}`} linhas={[{ nome: 'Média', valor: `${nf(dec + 1).format(p.media)} ${c.un}`, cor: cor.serie[li] }]}
-                rodape={p.flag === 1 ? 'Fora da faixa normal' : p.flag === 2 ? '8ª amostra seguida do mesmo lado' : undefined} />;
-            }} />
-          </ComposedChart>
-        </Grafico>
+        <Grafico rotulo="Carta de controle das médias" altura={320} n={pontos.length} rotulosX={pontos.map((p) => p.dia)} gapX={28} y={yXd}
+          camadas={[
+            { tipo: 'faixa', de: B.lcl, ate: B.ucl, cor: cor.good },
+            { tipo: 'linhaH', y: B.xbb, cor: cor.good, rotulo: 'Centro', posRotulo: 'abaixo' },
+            { tipo: 'linha', valores: pontos.map((p) => p.media), cor: cor.serie[li], espessura: 1.5 },
+            { tipo: 'pontos', valores: pontos.map((p) => p.fora), cor: cor.bad },
+            { tipo: 'pontos', valores: pontos.map((p) => p.seq), cor: cor.warn },
+          ]}
+          dica={(i) => { const p = pontos[i]; return { titulo: `${p.data} · turno ${p.turno}`, linhas: [{ nome: 'Média', valor: `${nf(dec + 1).format(p.media)} ${c.un}`, cor: cor.serie[li] }], rodape: p.flag === 1 ? 'Fora da faixa normal' : p.flag === 2 ? '8ª amostra seguida do mesmo lado' : undefined }; }} />
       </Card>
 
       <div className="grade g2">
         <Card titulo="Amplitude do subgrupo (carta R)" sub="Diferença entre a maior e a menor peça de cada amostra. Acima do limite, a variação dentro do dia aumentou.">
-          <Grafico rotulo="Carta de amplitude" altura={250}>
-            <ComposedChart data={pontos} margin={margem}>
-              <CartesianGrid {...grade} />
-              <XAxis dataKey="dia" {...eixoX} minTickGap={28} />
-              <YAxis {...eixoY} width={60} domain={[0, 'auto']} tickFormatter={fx} />
-              <ReferenceLine y={B.rucl} stroke={cor['ink-2']} strokeDasharray="5 4" label={{ value: 'Limite', position: 'insideTopRight' }} />
-              <ReferenceLine y={B.rb} stroke={cor['ink-2']} label={{ value: 'Média', position: 'insideBottomRight' }} />
-              <Line dataKey="amp" stroke={cor.serie[li]} strokeWidth={1.2} dot={false} isAnimationActive={false} />
-              <Scatter dataKey="ampFora" fill={cor.bad} isAnimationActive={false} />
-              <Tooltip content={({ active, payload }) => {
-                if (!active || !payload?.length) return null;
-                const p = payload[0].payload as (typeof pontos)[number];
-                return <CaixaTt titulo={p.data} linhas={[{ nome: 'Amplitude', valor: `${nf(dec + 1).format(p.amp)} ${c.un}`, cor: cor.serie[li] }]} />;
-              }} />
-            </ComposedChart>
-          </Grafico>
+          <Grafico rotulo="Carta de amplitude" altura={250} n={pontos.length} rotulosX={pontos.map((p) => p.dia)} gapX={28}
+            y={{ ...escala(0, Math.max(B.rucl * 1.15, ...pontos.map((p) => p.amp))), fmt: fx, largura: 60 }}
+            camadas={[
+              { tipo: 'linhaH', y: B.rucl, rotulo: 'Limite', tracejado: true },
+              { tipo: 'linhaH', y: B.rb, rotulo: 'Média', posRotulo: 'abaixo' },
+              { tipo: 'linha', valores: pontos.map((p) => p.amp), cor: cor.serie[li], espessura: 1.2 },
+              { tipo: 'pontos', valores: pontos.map((p) => p.ampFora), cor: cor.bad },
+            ]}
+            dica={(i) => ({ titulo: pontos[i].data, linhas: [{ nome: 'Amplitude', valor: `${nf(dec + 1).format(pontos[i].amp)} ${c.un}`, cor: cor.serie[li] }] })} />
         </Card>
         <Card titulo="Medições × especificação" sub="Cada peça medida no período. As barras vermelhas ficaram fora do que o cliente aceita (LIE e LSE).">
-          <Grafico rotulo="Histograma das medições" altura={250}>
-            <BarChart data={hist} margin={{ ...margem, top: 20 }} barCategoryGap={1}>
-              <CartesianGrid {...grade} />
-              <XAxis dataKey="rot" {...eixoX} minTickGap={24} />
-              <YAxis {...eixoY} allowDecimals={false} />
-              <ReferenceLine x={posBin(c.lie)} stroke={cor.bad} strokeWidth={1.5} label={{ value: 'LIE', position: 'top', fill: cor.bad }} />
-              <ReferenceLine x={posBin(c.lse)} stroke={cor.bad} strokeWidth={1.5} label={{ value: 'LSE', position: 'top', fill: cor.bad }} />
-              <ReferenceLine x={posBin(c.nom)} stroke={cor.muted} strokeDasharray="3 3" label={{ value: 'Nominal', position: 'top' }} />
-              <Tooltip cursor={{ fill: cor['accent-soft'], opacity: 0.4 }} content={({ active, payload }) => {
-                if (!active || !payload?.length) return null;
-                const p = payload[0].payload as (typeof hist)[number];
-                return <CaixaTt titulo={`${fx(p.x - w / 2)} a ${fx(p.x + w / 2)} ${c.un}`} linhas={[{ nome: 'Peças', valor: fN(p.n) }]} />;
-              }} />
-              <Bar dataKey="n" radius={[2, 2, 0, 0]} isAnimationActive={false}>
-                {hist.map((h) => <Cell key={h.rot} fill={h.fora ? cor.bad : cor.serie[li]} />)}
-              </Bar>
-            </BarChart>
-          </Grafico>
+          <Grafico rotulo="Histograma das medições" altura={250} topo={22} n={hist.length} rotulosX={hist.map((h) => h.rot)} gapX={24}
+            y={escala(0, Math.max(4, ...hist.map((h) => h.n)))}
+            camadas={[
+              { tipo: 'barras', valores: hist.map((h) => h.n), ocupa: 0.94, raio: 2, cor: (i) => (hist[i].fora ? cor.bad : cor.serie[li]) },
+              { tipo: 'linhaV', x: posBin(c.lie), cor: cor.bad, largura: 1.5, rotulo: 'LIE' },
+              { tipo: 'linhaV', x: posBin(c.lse), cor: cor.bad, largura: 1.5, rotulo: 'LSE' },
+              { tipo: 'linhaV', x: posBin(c.nom), cor: cor.muted, tracejado: true, rotulo: 'Nominal' },
+            ]}
+            dica={(i) => ({ titulo: `${fx(hist[i].x - w / 2)} a ${fx(hist[i].x + w / 2)} ${c.un}`, linhas: [{ nome: 'Peças', valor: fN(hist[i].n) }] })} />
         </Card>
       </div>
     </>

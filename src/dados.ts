@@ -127,18 +127,48 @@ const D = (y: number, mo: number, d: number) => Date.UTC(y, mo - 1, d);
   addNC({ ...o, m: monthIdx(o.open), area: AREA[o.causa], reinc: false, close: o.close === null ? HOJE + 999 * DAY : o.close });
 });
 brutas.sort((a, b) => a.open - b.open);
+
+/*
+ * Não conformidades que também existem no SGQ Rotalume (o sistema onde elas são tratadas).
+ * Os dois projetos contam a mesma história: mesmo código, mesmo assunto, mesma linha e mesma situação.
+ * Mantenha esta lista igual ao exemplo do SGQ (src/data/seed.ts no repositório SGQ-Rotalume).
+ */
+export const SGQ_URL = 'https://sqgrotalume.vercel.app';
+type NoSgq = { desc: string; line: number; origem: string; causa: string; grav: Grav; etapa: Etapa };
+export const NO_SGQ: Record<string, NoSgq> = {
+  'NC-2026-058': { desc: 'Diâmetro do eixo fora de controle por desgaste de ferramenta', line: 0, origem: 'Inspeção de processo', causa: 'Máquina', grav: 'Maior', etapa: 'Encerrada' },
+  'NC-2026-060': { desc: 'Variação de torque acima do normal no turno C', line: 1, origem: 'Inspeção de processo', causa: 'Mão de obra', grav: 'Maior', etapa: 'Encerrada' },
+  'NC-2026-062': { desc: 'Bolhas e escorrimento na pintura nos meses de verão', line: 2, origem: 'Inspeção de processo', causa: 'Meio ambiente', grav: 'Menor', etapa: 'Encerrada' },
+  'NC-2026-063': { desc: 'Reclamação de cliente: eixo com diâmetro acima do especificado', line: 0, origem: 'Reclamação de cliente', causa: 'Máquina', grav: 'Crítica', etapa: 'Encerrada' },
+  'NC-2026-065': { desc: 'Lote de parafusos com rosca irregular bloqueado no recebimento', line: 1, origem: 'Fornecedor', causa: 'Material', grav: 'Crítica', etapa: 'Executar' },
+  'NC-2026-067': { desc: 'Parafusos com rosca irregular no recebimento (reincidência)', line: 1, origem: 'Fornecedor', causa: 'Material', grav: 'Menor', etapa: 'Verificar' },
+  'NC-2026-069': { desc: 'Instrução de aperto desatualizada no posto da montagem', line: 1, origem: 'Auditoria interna', causa: 'Método', grav: 'Menor', etapa: 'Planejar' },
+  'NC-2026-070': { desc: 'Micrômetro do posto L1 com calibração vencida', line: 0, origem: 'Auditoria interna', causa: 'Medição', grav: 'Maior', etapa: 'Verificar' },
+  'NC-2026-071': { desc: 'Dimensional fora de especificação acima do limite de alerta', line: 0, origem: 'Inspeção de processo', causa: 'Mão de obra', grav: 'Maior', etapa: 'Executar' },
+  'NC-2026-072': { desc: 'Bolha acima do limite de alerta', line: 2, origem: 'Inspeção de processo', causa: 'Meio ambiente', grav: 'Menor', etapa: 'Planejar' },
+  'NC-2026-073': { desc: 'Risco superficial acima do limite de alerta', line: 0, origem: 'Inspeção de processo', causa: 'Mão de obra', grav: 'Menor', etapa: 'Planejar' },
+  'NC-2026-074': { desc: 'Componente faltante acima do limite de alerta', line: 1, origem: 'Inspeção de processo', causa: 'Método', grav: 'Maior', etapa: 'Planejar' },
+};
+export const linkSgq = (code: string) => (NO_SGQ[code] ? `${SGQ_URL}/nao-conformidades/${code.toLowerCase()}` : null);
+
 const seqN: Record<number, number> = {};
-export const ncs: NC[] = brutas.map((n) => {
-  const y = new Date(n.open).getUTCFullYear(); seqN[y] = (seqN[y] || 0) + 1;
+export const ncs: NC[] = brutas.map((n0) => {
+  const y = new Date(n0.open).getUTCFullYear(); seqN[y] = (seqN[y] || 0) + 1;
+  const code = `NC-${y}-${String(seqN[y]).padStart(3, '0')}`;
+  const sg = NO_SGQ[code];
+  const n = sg ? {
+    ...n0, desc: sg.desc, line: sg.line, origem: sg.origem, causa: sg.causa, area: AREA[sg.causa], grav: sg.grav, prazo: n0.open + PRAZO[sg.grav] * DAY, reinc: false,
+    close: sg.etapa === 'Encerrada' ? (n0.close ?? Math.min(HOJE - DAY, n0.open + MED_CLOSE[sg.grav] * DAY)) : null,
+  } : n0;
   const isOpen = n.close === null;
   const age = Math.round(((isOpen ? HOJE : n.close!) - n.open) / DAY);
   let stage: Etapa = 'Encerrada', reinc = n.reinc;
   if (isOpen) {
     const f = (HOJE - n.open) / (PRAZO[n.grav] * DAY);
-    stage = f < 0.25 ? 'Planejar' : f < 0.55 ? 'Executar' : f < 0.85 ? 'Verificar' : 'Agir';
+    stage = sg ? sg.etapa : f < 0.25 ? 'Planejar' : f < 0.55 ? 'Executar' : f < 0.85 ? 'Verificar' : 'Agir';
     reinc = false;
   }
-  return { ...n, reinc, code: `NC-${y}-${String(seqN[y]).padStart(3, '0')}`, isOpen, late: isOpen && n.prazo < HOJE, closedLate: !isOpen && n.close! > n.prazo, age, stage };
+  return { ...n, reinc, code, isOpen, late: isOpen && n.prazo < HOJE, closedLate: !isOpen && n.close! > n.prazo, age, stage };
 });
 
 /* ---------------- consultas ---------------- */

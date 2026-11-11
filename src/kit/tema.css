@@ -289,12 +289,18 @@ td .fraco { display: block; }
 
 /* ---------- gráficos ---------- */
 .graf { width: 100%; min-width: 0; }
-.graf .recharts-cartesian-axis-tick-value, .graf .recharts-text { fill: var(--muted); font-size: 12px; }
-.graf .recharts-cartesian-grid line { stroke: var(--line); }
-.graf .recharts-reference-line-line { stroke: var(--ink-2); }
-.graf .recharts-label { fill: var(--ink-2); font-size: 11.5px; font-weight: 600; }
-.graf .recharts-surface { overflow: visible; }
-.graf .recharts-wrapper:focus, .graf .recharts-surface:focus { outline: none; }
+.graf { position: relative; }
+.graf svg { display: block; overflow: visible; touch-action: pan-y; }
+.graf svg:focus { outline: none; }
+.graf svg:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; border-radius: 6px; }
+.g-tick { fill: var(--muted); font-size: 12px; font-variant-numeric: tabular-nums; }
+.g-grade { stroke: var(--line); }
+.g-eixo { stroke: var(--line-2); }
+.g-ref { fill: var(--ink-2); font-size: 11.5px; font-weight: 600; }
+.g-rot { fill: var(--ink); font-size: 12px; font-weight: 650; }
+.g-hover { fill: var(--accent-soft); opacity: .35; }
+.g-sombra { fill: var(--surface-2); opacity: .75; }
+.tt-pos { position: absolute; pointer-events: none; z-index: 5; }
 .graf .halo { paint-order: stroke; stroke: var(--surface); stroke-width: 4px; stroke-linejoin: round; }
 .tt {
   background: var(--surface); border: 1px solid var(--line-2); border-radius: 10px; padding: 9px 12px;
@@ -365,6 +371,19 @@ td .fraco { display: block; }
   .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .nav { padding-right: 28px; -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent); mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent); }
   .kpi .k-val { font-size: 24px; }
+}
+
+.rot-curto { display: none; }
+.link-sgq { display: inline-flex; align-items: center; gap: 3px; font-size: 12px; font-weight: 600; color: var(--accent); text-decoration: none; white-space: nowrap; }
+.link-sgq:hover { text-decoration: underline; }
+td .link-sgq { display: flex; margin-top: 2px; }
+/* celular: menu em 5 colunas, ícone em cima e rótulo curto embaixo, tudo visível sem rolar */
+@media (max-width: 560px) {
+  .nav { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 4px; padding-right: 0; -webkit-mask-image: none; mask-image: none; overflow: visible; }
+  .nav a { flex-direction: column; gap: 3px; padding: 7px 2px; font-size: 11.5px; justify-content: center; text-align: center; white-space: nowrap; }
+  .nav a svg { width: 18px; height: 18px; }
+  .rot-longo { display: none; }
+  .rot-curto { display: inline; }
 }
 
 @media print {

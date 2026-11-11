@@ -1,11 +1,14 @@
 import { useMemo, useState } from 'react';
-import { Bar, BarChart, CartesianGrid, Cell, Tooltip, XAxis, YAxis } from 'recharts';
 import { useFiltro } from '../App';
-import { AREA, CAUSAS, HOJE, LINES, ncs, ORIGENS, type NC } from '../dados';
+import { AREA, CAUSAS, HOJE, LINES, linkSgq, ncs, ORIGENS, type NC } from '../dados';
+import { ExternalLink } from 'lucide-react';
+
+/** Link para tratar a não conformidade no SGQ, quando ela existe lá. */
+const NoSgq = ({ code }: { code: string }) => { const u = linkSgq(code); return u ? <a className="link-sgq" href={u} target="_blank" rel="noopener" aria-label={`Abrir ${code} no SGQ Rotalume (nova aba)`}>Ver no SGQ<ExternalLink size={12} aria-hidden="true" /></a> : null; };
 import { cap, fDate, fN, fP, pl, statusOf } from '../kit/formato';
 import { periodLabel } from '../kit/meses';
 import { Card, Kpis, Manchete, Pill, Segmentado, TabelaOrdenavel, type Coluna } from '../kit/ui';
-import { eixoY, Grafico, tt, useCores } from '../kit/graficos';
+import { BarrasH, useCores } from '../kit/graficos';
 
 const ETAPAS: [NC['stage'], string][] = [['Planejar', 'P'], ['Executar', 'D'], ['Verificar', 'C'], ['Agir', 'A']];
 const GP: Record<string, string> = { 'Menor': 'neutral', 'Maior': 'warn', 'Crítica': 'bad' };
@@ -37,7 +40,7 @@ export default function Acoes() {
 
   type Linha = (typeof linhas)[number];
   const colunas: Coluna<Linha>[] = [
-    { k: 'code', label: 'Código', render: (n) => <span className="mono">{n.code}</span> },
+    { k: 'code', label: 'Código', render: (n) => <><span className="mono">{n.code}</span><NoSgq code={n.code} /></> },
     { k: 'open', label: 'Abertura', num: true, render: (n) => fDate(n.open) },
     { k: 'lineN', label: 'Linha' },
     { k: 'gO', label: 'Gravidade', render: (n) => <Pill status={GP[n.grav]}>{n.grav}</Pill> },
@@ -65,7 +68,7 @@ export default function Acoes() {
       ]} />
 
       <Card titulo="Ações em andamento no ciclo PDCA" acoes={<span className="fraco">{open.length} abertas · hoje, {fDate(HOJE)}</span>}
-        sub="Cada não conformidade aberta, na etapa em que está. Vencidas em destaque, ordenadas pelo prazo.">
+        sub="Cada não conformidade aberta, na etapa em que está. Vencidas em destaque, ordenadas pelo prazo. As que têm “Ver no SGQ” abrem o tratamento completo (5 porquês, plano de ação e eficácia) no SGQ Rotalume.">
         <div className="quadro">
           {ETAPAS.map(([st, l]) => {
             const itens = open.filter((n) => n.stage === st).sort((a, b) => a.prazo - b.prazo);
@@ -77,6 +80,7 @@ export default function Acoes() {
                   <div key={n.code} className={`ficha${n.late ? ' atrasada' : ''}`}>
                     <div className="ficha-top"><span className="mono">{n.code}</span><Pill status={GP[n.grav]}>{n.grav}</Pill></div>
                     <p>{n.desc}</p>
+                    <NoSgq code={n.code} />
                     <div className="ficha-meta"><span>{LINES[n.line].id} · {n.area}</span>{n.late ? <b className="delta ruim">venceu em {fDate(n.prazo)}</b> : <span>prazo {fDate(n.prazo)}</span>}</div>
                   </div>
                 ))}
@@ -88,30 +92,14 @@ export default function Acoes() {
 
       <div className="grade g2">
         <Card titulo="Qual a causa raiz mais comum?" sub="Não conformidades do período pelos 6M (método, máquina, mão de obra, material, medição e meio ambiente).">
-          <Grafico semDados={!selN.length} vazio="Nenhuma não conformidade aberta neste recorte." rotulo="Causas raiz pelos 6M" altura={250}>
-            <BarChart data={c6} layout="vertical" margin={{ top: 4, right: 24, bottom: 0, left: 8 }}>
-              <CartesianGrid horizontal={false} />
-              <XAxis type="number" allowDecimals={false} tickLine={false} axisLine={false} />
-              <YAxis type="category" dataKey="cz" {...eixoY} width={100} />
-              <Tooltip cursor={{ fill: cor['accent-soft'], opacity: 0.4 }} content={tt((v, _n, p) => `${v} · área: ${p.area}`)} />
-              <Bar dataKey="n" name="Não conformidades" radius={[0, 5, 5, 0]} maxBarSize={22} isAnimationActive={false}>
-                {c6.map((x, i) => <Cell key={x.cz} fill={i === 0 ? cor.accent : cor['seq-3']} />)}
-              </Bar>
-            </BarChart>
-          </Grafico>
+          <BarrasH semDados={!selN.length} vazio="Nenhuma não conformidade neste recorte." rotulo="Causas raiz pelos 6M" larguraRotulo={100}
+            itens={c6.map((x, i) => ({ nome: x.cz, valor: x.n, cor: i === 0 ? cor.accent : cor['seq-3'] }))}
+            dica={(i) => ({ titulo: c6[i].cz, linhas: [{ nome: 'Não conformidades', valor: `${c6[i].n} · área: ${c6[i].area}` }] })} />
         </Card>
         <Card titulo="De onde vêm as não conformidades?" sub="Em vermelho, as que chegaram pelo cliente: são as que mais custam para a imagem da empresa.">
-          <Grafico semDados={!selN.length} vazio="Nenhuma não conformidade aberta neste recorte." rotulo="Origem das não conformidades" altura={250}>
-            <BarChart data={og} layout="vertical" margin={{ top: 4, right: 24, bottom: 0, left: 8 }}>
-              <CartesianGrid horizontal={false} />
-              <XAxis type="number" allowDecimals={false} tickLine={false} axisLine={false} />
-              <YAxis type="category" dataKey="o" {...eixoY} width={150} />
-              <Tooltip cursor={{ fill: cor['accent-soft'], opacity: 0.4 }} content={tt((v) => `${v}`)} />
-              <Bar dataKey="n" name="Não conformidades" radius={[0, 5, 5, 0]} maxBarSize={22} isAnimationActive={false}>
-                {og.map((x) => <Cell key={x.o} fill={x.o === 'Reclamação de cliente' ? cor.bad : cor['seq-4']} />)}
-              </Bar>
-            </BarChart>
-          </Grafico>
+          <BarrasH semDados={!selN.length} vazio="Nenhuma não conformidade neste recorte." rotulo="Origem das não conformidades" larguraRotulo={150}
+            itens={og.map((x) => ({ nome: x.o, valor: x.n, cor: x.o === 'Reclamação de cliente' ? cor.bad : cor['seq-4'] }))}
+            dica={(i) => ({ titulo: og[i].o, linhas: [{ nome: 'Não conformidades', valor: String(og[i].n) }] })} />
         </Card>
       </div>
 

@@ -1,10 +1,9 @@
-import { Bar, BarChart, CartesianGrid, Cell, LabelList, Line, LineChart, ReferenceLine, Tooltip, XAxis, YAxis } from 'recharts';
 import { useFiltro } from '../App';
 import { agg, LINES, lineIdx, META, ncs, pareto, prod, rowsP, SHIFTS, type Agg } from '../dados';
 import { fBRL, fMil, fN, fP, fPP, nf, pl, statusOf, sum } from '../kit/formato';
 import { MONTHS, periodLabel, prevRange } from '../kit/meses';
 import { Card, Delta, Kpis, Legenda, Manchete, type Achado } from '../kit/ui';
-import { eixoX, eixoY, faixasForaDoPeriodo, grade, Grafico, margem, opMes, rotuloTopo, tt, useCores } from '../kit/graficos';
+import { escala, Grafico, opMes, rotuloAjustavel, sombrasForaDoPeriodo, useCores } from '../kit/graficos';
 
 export default function Resumo() {
   const f = useFiltro();
@@ -86,54 +85,34 @@ export default function Resumo() {
       <div className="grade">
         <Card titulo="A fábrica está eficiente mês a mês?" sub="OEE de cada linha nos 12 meses. A linha tracejada é a meta. Os meses fora do período escolhido ficam esmaecidos.">
           <Legenda itens={[...li.map((i) => ({ label: LINES[i].curto, cor: cor.serie[i], tipo: 'linha' as const })), { label: 'Meta 75%', tipo: 'tracejado' as const }]} />
-          <Grafico rotulo="OEE mensal por linha" altura={290}>
-            <LineChart data={serieOEE} margin={margem}>
-              <CartesianGrid {...grade} />
-              {faixasForaDoPeriodo(from, to)}
-              <XAxis dataKey="mes" {...eixoX} />
-              <YAxis {...eixoY} domain={[Math.floor(Math.min(...flat, 75) - 3), Math.ceil(Math.max(...flat) + 2)]} tickFormatter={(v) => `${v}%`} />
-              <ReferenceLine y={75} stroke={cor['ink-2']} strokeDasharray="5 4" label={{ value: 'Meta 75%', position: 'insideTopRight' }} />
-              <Tooltip content={tt((v) => `${nf(1).format(v)}%`)} />
-              {li.map((i) => (
-                <Line key={i} type="linear" dataKey={LINES[i].curto} stroke={cor.serie[i]} strokeWidth={2.6} dot={{ r: 3, fill: cor.serie[i] }} activeDot={{ r: 5 }} isAnimationActive={false} />
-              ))}
-            </LineChart>
-          </Grafico>
+          <Grafico rotulo="OEE mensal por linha" altura={290} n={MONTHS.length} rotulosX={MONTHS.map((m) => m.label)}
+            y={{ ...escala(Math.min(...flat, 75) - 1, Math.max(...flat) + 1, 4), fmt: (v) => `${nf(Number.isInteger(v) ? 0 : 1).format(v)}%` }}
+            camadas={[
+              ...sombrasForaDoPeriodo(from, to),
+              { tipo: 'linhaH', y: 75, rotulo: 'Meta 75%', tracejado: true },
+              ...li.map((i) => ({ tipo: 'linha' as const, valores: serieOEE.map((o) => o[LINES[i].curto] as number), cor: cor.serie[i], espessura: 2.6, pontos: 3 })),
+            ]}
+            dica={(k) => ({ titulo: MONTHS[k].label, linhas: li.map((i) => ({ nome: LINES[i].curto, valor: `${nf(1).format(serieOEE[k][LINES[i].curto] as number)}%`, cor: cor.serie[i] })) })} />
         </Card>
       </div>
 
       <div className="grade g2">
         <Card titulo="Para onde vai a eficiência?" sub={`Do tempo planejado até o OEE: quanto se perde em cada etapa ${periodLabel(f.periodo)}.`}>
-          <Grafico rotulo="Cascata de perdas do OEE" altura={290}>
-            <BarChart data={cascata} margin={{ ...margem, top: 24 }}>
-              <CartesianGrid {...grade} />
-              <XAxis dataKey="nome" {...eixoX} interval={0} />
-              <YAxis {...eixoY} domain={[0, 100]} tickFormatter={(v) => `${v}%`} />
-              <Tooltip cursor={{ fill: cor['accent-soft'], opacity: 0.4 }} content={tt((v, _n, pl) => (pl.tipo === 'perda' ? `perda de ${nf(1).format(v)} pontos` : `${nf(1).format(v)}%`), { filtrar: (i) => i.dataKey === 'valor' })} />
-              <Bar dataKey="base" stackId="c" fill="transparent" isAnimationActive={false} />
-              <Bar dataKey="valor" name="Valor" stackId="c" radius={[5, 5, 5, 5]} maxBarSize={72} isAnimationActive={false}>
-                {cascata.map((s) => <Cell key={s.nome} fill={s.tipo === 'perda' ? cor.bad : s.tipo === 'resultado' ? cor.accent : cor['seq-3']} />)}
-                <LabelList dataKey="rotulo" content={rotuloTopo} />
-              </Bar>
-            </BarChart>
-          </Grafico>
+          <Grafico rotulo="Cascata de perdas do OEE" altura={290} topo={24} n={cascata.length} rotulosX={cascata.map((c) => c.nome)} alturaEixoX={34} rotuloX={(t, _i, cx, y, passo) => rotuloAjustavel(t, cx, y, Math.max(passo, 44))}
+            y={{ min: 0, max: 100, ticks: [0, 25, 50, 75, 100], fmt: (v) => `${v}%` }}
+            camadas={[{ tipo: 'barras', valores: cascata.map((c) => c.valor), base: cascata.map((c) => c.base), larguraMax: 72, raio: 5, topo: 'redondo', rotulos: cascata.map((c) => c.rotulo),
+              cor: (i) => (cascata[i].tipo === 'perda' ? cor.bad : cascata[i].tipo === 'resultado' ? cor.accent : cor['seq-3']) }]}
+            dica={(i) => ({ titulo: cascata[i].nome, linhas: [{ nome: 'Valor', valor: cascata[i].tipo === 'perda' ? `perda de ${nf(1).format(cascata[i].valor)} pontos` : `${nf(1).format(cascata[i].valor)}%` }] })} />
         </Card>
         <Card titulo="Quanto custa a má qualidade?" sub="Refugo (peça perdida) e retrabalho por mês, em reais.">
           <Legenda itens={[{ label: 'Refugo (peça perdida)', cor: cor['seq-6'] }, { label: 'Retrabalho', cor: cor['seq-3'] }]} />
-          <Grafico rotulo="Custo da má qualidade por mês" altura={270}>
-            <BarChart data={custo} margin={margem}>
-              <CartesianGrid {...grade} />
-              <XAxis dataKey="mes" {...eixoX} />
-              <YAxis {...eixoY} tickFormatter={fMil} />
-              <Tooltip cursor={{ fill: cor['accent-soft'], opacity: 0.4 }} content={tt((v) => `R$ ${nf(0).format(v)}`, { rodape: (it) => `Total: R$ ${nf(0).format(sum(it, (i) => Number(i.value)))}` })} />
-              <Bar dataKey="Refugo" stackId="c" fill={cor['seq-6']} maxBarSize={34} isAnimationActive={false}>
-                {custo.map((c) => <Cell key={c.mes} fillOpacity={opMes(c.i, from, to)} />)}
-              </Bar>
-              <Bar dataKey="Retrabalho" stackId="c" fill={cor['seq-3']} radius={[5, 5, 0, 0]} maxBarSize={34} isAnimationActive={false}>
-                {custo.map((c) => <Cell key={c.mes} fillOpacity={opMes(c.i, from, to)} />)}
-              </Bar>
-            </BarChart>
-          </Grafico>
+          <Grafico rotulo="Custo da má qualidade por mês" altura={270} n={custo.length} rotulosX={custo.map((c) => c.mes)}
+            y={(() => { const e = escala(0, Math.max(...custo.map((c) => c.Refugo + c.Retrabalho))); return { ...e, fmt: fMil }; })()}
+            camadas={[
+              { tipo: 'barras', valores: custo.map((c) => c.Refugo), cor: cor['seq-6'], larguraMax: 34, raio: 0, opacidade: (i) => opMes(custo[i].i, from, to) },
+              { tipo: 'barras', valores: custo.map((c) => c.Retrabalho), base: custo.map((c) => c.Refugo), cor: cor['seq-3'], larguraMax: 34, raio: 5, opacidade: (i) => opMes(custo[i].i, from, to) },
+            ]}
+            dica={(i) => ({ titulo: custo[i].mes, linhas: [{ nome: 'Refugo', valor: `R$ ${nf(0).format(custo[i].Refugo)}`, cor: cor['seq-6'] }, { nome: 'Retrabalho', valor: `R$ ${nf(0).format(custo[i].Retrabalho)}`, cor: cor['seq-3'] }], rodape: `Total: R$ ${nf(0).format(custo[i].Refugo + custo[i].Retrabalho)}` })} />
         </Card>
       </div>
     </>

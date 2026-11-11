@@ -1,27 +1,10 @@
 import { useState } from 'react';
-import { Bar, BarChart, CartesianGrid, Cell, ComposedChart, Line, ReferenceLine, Tooltip, XAxis, YAxis } from 'recharts';
 import { useFiltro } from '../App';
 import { agg, LINES, pareto, prod, rowsP, SHIFTS } from '../dados';
 import { fN, fP, joinE, nf, sum } from '../kit/formato';
 import { MONTHS, periodLabel } from '../kit/meses';
 import { Card, Legenda, Manchete, MapaCalor } from '../kit/ui';
-import { CaixaTt, eixoX, eixoY, grade, Grafico, margem, opMes, tt, useCores } from '../kit/graficos';
-
-/** quebra o nome do defeito em até duas linhas no eixo */
-function RotuloDefeito({ x, y, payload, estreito }: { x?: number | string; y?: number | string; payload?: { value: string }; estreito: boolean }) {
-  const t = payload?.value ?? '';
-  const palavras = t.split(' ');
-  const linhas: string[] = [];
-  let cur = '';
-  palavras.forEach((w) => { if ((cur + ' ' + w).trim().length > 14 && cur) { linhas.push(cur); cur = w; } else cur = (cur + ' ' + w).trim(); });
-  linhas.push(cur);
-  const mostrar = estreito ? [t.length > 12 ? `${t.slice(0, 11)}…` : t] : linhas.slice(0, 3);
-  return (
-    <text x={Number(x)} y={Number(y ?? 0) + 12} textAnchor="middle" className="recharts-text" fontSize={11.5}>
-      {mostrar.map((l, i) => <tspan key={i} x={Number(x)} dy={i ? 13 : 0}>{l}</tspan>)}
-    </text>
-  );
-}
+import { escala, Grafico, opMes, rotuloAjustavel, useCores } from '../kit/graficos';
 
 export default function Defeitos() {
   const f = useFiltro();
@@ -30,7 +13,6 @@ export default function Defeitos() {
   const [escolhido, setEscolhido] = useState<string | null>(null);
   const sel = escolhido && p.some((x) => x.name === escolhido) ? escolhido : p[0]?.name;
   const vital = p.filter((x) => x.vital);
-  const estreito = typeof window !== 'undefined' && window.innerWidth < 640;
 
   const dadosPareto = p.map((x) => ({ ...x, part: +(x.share * 100).toFixed(1), acum: +(x.cum * 100).toFixed(1) }));
 
@@ -54,25 +36,17 @@ export default function Defeitos() {
 
       <Card titulo="Quais defeitos aparecem mais?" sub="Gráfico de Pareto: barras com as ocorrências (eixo da esquerda) e linha com o acumulado (eixo da direita). Os defeitos em azul somam 80% e são os primeiros a atacar. Clique em uma barra para ver a evolução daquele defeito.">
         <Legenda itens={[{ label: 'Poucos vitais (até 80%)', cor: cor.accent }, { label: 'Muitos triviais', cor: cor['line-2'] }, { label: 'Acumulado', cor: cor.ink, tipo: 'linha' }]} />
-        <Grafico rotulo="Pareto dos defeitos" altura={estreito ? 300 : 340}>
-          <ComposedChart data={dadosPareto} margin={{ ...margem, bottom: estreito ? 20 : 30 }}
-            onClick={(e) => { const i = (e as { activeTooltipIndex?: number | string } | null)?.activeTooltipIndex; if (i != null) setEscolhido(p[Number(i)]?.name ?? null); }}>
-            <CartesianGrid {...grade} />
-            <XAxis dataKey="name" {...eixoX} interval={0} height={estreito ? 60 : 50} tick={(props) => <RotuloDefeito {...props} estreito={estreito} />} angle={estreito ? -40 : 0} />
-            <YAxis yAxisId="n" {...eixoY} tickFormatter={(v) => fN(v)} />
-            <YAxis yAxisId="p" orientation="right" {...eixoY} width={44} domain={[0, 100]} tickFormatter={(v) => `${v}%`} />
-            <ReferenceLine yAxisId="p" y={80} stroke={cor['ink-2']} strokeDasharray="5 4" label={{ value: '80% acumulado', position: 'insideBottomRight' }} />
-            <Tooltip cursor={{ fill: cor['accent-soft'], opacity: 0.4 }} content={({ active, payload }) => {
-              if (!active || !payload?.length) return null;
-              const x = payload[0].payload as (typeof dadosPareto)[number];
-              return <CaixaTt titulo={x.name} linhas={[{ nome: 'Ocorrências', valor: `${fN(x.n)} (${nf(1).format(x.part)}%)` }, { nome: 'Acumulado', valor: `${nf(1).format(x.acum)}%` }]} rodape="Clique para ver a evolução" />;
-            }} />
-            <Bar yAxisId="n" dataKey="n" name="Ocorrências" radius={[5, 5, 0, 0]} isAnimationActive={false} style={{ cursor: 'pointer' }}>
-              {dadosPareto.map((x) => <Cell key={x.name} fill={x.vital ? cor.accent : cor['line-2']} stroke={x.name === sel ? cor.ink : 'none'} strokeWidth={x.name === sel ? 2 : 0} />)}
-            </Bar>
-            <Line yAxisId="p" dataKey="acum" name="Acumulado" stroke={cor.ink} strokeWidth={2} dot={{ r: 3, fill: cor.ink }} isAnimationActive={false} />
-          </ComposedChart>
-        </Grafico>
+        <Grafico rotulo="Pareto dos defeitos" altura={360} alturaEixoX={64} n={dadosPareto.length} rotulosX={dadosPareto.map((x) => x.name)}
+          rotuloX={(t, _i, cx, y, passo) => rotuloAjustavel(t, cx, y, passo)}
+          y={{ ...escala(0, Math.max(1, ...dadosPareto.map((x) => x.n))), fmt: (v) => fN(v) }}
+          y2={{ min: 0, max: 100, ticks: [0, 25, 50, 75, 100], fmt: (v) => `${v}%` }}
+          camadas={[
+            { tipo: 'barras', valores: dadosPareto.map((x) => x.n), raio: 5, ocupa: 0.78, cor: (i) => (dadosPareto[i].vital ? cor.accent : cor['line-2']), contorno: (i) => (dadosPareto[i].name === sel ? cor.ink : undefined) },
+            { tipo: 'linhaH', y: 80, eixo: 'y2', rotulo: '80% acumulado', tracejado: true, posRotulo: 'abaixo' },
+            { tipo: 'linha', valores: dadosPareto.map((x) => x.acum), eixo: 'y2', cor: cor.ink, espessura: 2, pontos: 3 },
+          ]}
+          aoClicar={(i) => setEscolhido(p[i]?.name ?? null)}
+          dica={(i) => { const x = dadosPareto[i]; return { titulo: x.name, linhas: [{ nome: 'Ocorrências', valor: `${fN(x.n)} (${nf(1).format(x.part)}%)` }, { nome: 'Acumulado', valor: `${nf(1).format(x.acum)}%` }], rodape: 'Clique para ver a evolução' }; }} />
       </Card>
 
       <div className="grade g-5-7">
@@ -82,17 +56,10 @@ export default function Defeitos() {
             ativo={(l, s) => (f.linha === 'all' || +f.linha === l) && (f.turno === 'all' || +f.turno === s)} />
         </Card>
         <Card titulo={`Evolução do defeito: ${sel ?? '—'}`} sub="Ocorrências por mês. Os meses fora do período escolhido ficam esmaecidos.">
-          <Grafico rotulo={`Evolução mensal de ${sel}`} altura={250}>
-            <BarChart data={serie} margin={margem}>
-              <CartesianGrid {...grade} />
-              <XAxis dataKey="mes" {...eixoX} />
-              <YAxis {...eixoY} allowDecimals={false} />
-              <Tooltip cursor={{ fill: cor['accent-soft'], opacity: 0.4 }} content={tt((v) => `${fN(v)} ocorrências`)} />
-              <Bar dataKey="n" name={sel ?? ''} fill={cor.accent} radius={[5, 5, 0, 0]} maxBarSize={40} isAnimationActive={false}>
-                {serie.map((s) => <Cell key={s.mes} fillOpacity={opMes(s.i, f.periodo.from, f.periodo.to)} />)}
-              </Bar>
-            </BarChart>
-          </Grafico>
+          <Grafico rotulo={`Evolução mensal de ${sel}`} altura={250} n={serie.length} rotulosX={serie.map((x) => x.mes)}
+            y={escala(0, Math.max(4, ...serie.map((x) => x.n)))}
+            camadas={[{ tipo: 'barras', valores: serie.map((x) => x.n), cor: cor.accent, larguraMax: 40, raio: 5, opacidade: (i) => opMes(serie[i].i, f.periodo.from, f.periodo.to) }]}
+            dica={(i) => ({ titulo: serie[i].mes, linhas: [{ nome: sel ?? '', valor: `${fN(serie[i].n)} ocorrências`, cor: cor.accent }] })} />
         </Card>
       </div>
     </>

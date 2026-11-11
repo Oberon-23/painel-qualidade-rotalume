@@ -1,5 +1,5 @@
-import { describe, expect, test } from 'vitest';
-import { agg, BASE, LINES, pareto, prod, rowsP, spc, type Filtro } from './dados';
+import { describe, expect, it, test } from 'vitest';
+import { agg, BASE, LINES, linkSgq, ncs, NO_SGQ, pareto, prod, rowsP, spc, type Filtro } from './dados';
 import { statusOf } from './kit/formato';
 
 const TUDO: Filtro = { periodo: { from: 0, to: 11 }, linha: 'all', turno: 'all' };
@@ -38,5 +38,23 @@ describe('situação de um indicador', () => {
     expect(statusOf(0.74, 0.75)).toBe('warn');
     expect(statusOf(0.5, 0.75)).toBe('bad');
     expect(statusOf(0.02, 0.03, false)).toBe('ok');
+  });
+});
+
+describe('mesma história do SGQ Rotalume', () => {
+  it('as não conformidades que existem no SGQ têm o mesmo assunto, linha e situação', () => {
+    for (const [code, s] of Object.entries(NO_SGQ)) {
+      const n = ncs.find((x) => x.code === code);
+      expect(n, code).toBeDefined();
+      expect(n!.desc).toBe(s.desc);
+      expect(n!.line).toBe(s.line);
+      expect(n!.isOpen).toBe(s.etapa !== 'Encerrada');
+      if (n!.isOpen) expect(n!.stage).toBe(s.etapa);
+    }
+  });
+  it('códigos continuam únicos e o link aponta para o SGQ', () => {
+    expect(new Set(ncs.map((n) => n.code)).size).toBe(ncs.length);
+    expect(linkSgq('NC-2026-065')).toBe('https://sqgrotalume.vercel.app/nao-conformidades/nc-2026-065');
+    expect(linkSgq('NC-2026-001')).toBeNull();
   });
 });

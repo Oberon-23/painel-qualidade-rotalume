@@ -16,11 +16,11 @@ const FILTROS: DefFiltro[] = [
 ];
 
 const VISOES: Visao[] = [
-  { path: '/', label: 'Visão geral', icon: <House />, heading: 'Visão geral da qualidade', sub: 'Eficiência das linhas, peças boas e custo da má qualidade' },
+  { path: '/', label: 'Visão geral', curto: 'Geral', icon: <House />, heading: 'Visão geral da qualidade', sub: 'Eficiência das linhas, peças boas e custo da má qualidade' },
   { path: '/estabilidade', label: 'Estabilidade', icon: <Activity />, heading: 'Estabilidade do processo', sub: 'O processo está sob controle e atende ao cliente?', filtros: ['turno'] },
   { path: '/defeitos', label: 'Defeitos', icon: <BarChart3 />, heading: 'Defeitos', sub: 'Quais defeitos atacar primeiro e onde eles acontecem' },
-  { path: '/acoes', label: 'Ações corretivas', icon: <RefreshCcw />, heading: 'Ações corretivas', sub: 'Não conformidades em tratamento, prazos e eficácia', filtros: ['linha'] },
-  { path: '/sobre', label: 'Sobre os dados', icon: <BookOpen />, heading: 'Sobre os dados', sub: 'Como o painel foi construído', filtros: 'nenhum' },
+  { path: '/acoes', label: 'Ações corretivas', curto: 'Ações', icon: <RefreshCcw />, heading: 'Ações corretivas', sub: 'Não conformidades em tratamento, prazos e eficácia', filtros: ['linha'] },
+  { path: '/sobre', label: 'Sobre os dados', curto: 'Sobre', icon: <BookOpen />, heading: 'Sobre os dados', sub: 'Como o painel foi construído', filtros: 'nenhum' },
 ];
 
 /** Filtro atual no formato que as consultas usam. */

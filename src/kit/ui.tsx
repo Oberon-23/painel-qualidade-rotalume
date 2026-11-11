@@ -38,6 +38,8 @@ export function SeletorTema() {
 export type Visao = {
   path: string;
   label: string;
+  /** Rótulo curto para o menu no celular (cabe tudo na tela, sem rolar). */
+  curto?: string;
   icon: ReactNode;
   heading: string;
   sub: string;
@@ -68,7 +70,7 @@ export function Moldura({ produto, icone, visoes, asOf, rodape }: {
           </NavLink>
           <nav className="nav" aria-label="Seções do painel">
             {visoes.map((v) => (
-              <NavLink key={v.path} to={v.path} end>{v.icon}{v.label}</NavLink>
+              <NavLink key={v.path} to={v.path} end aria-label={v.label}>{v.icon}<span className="rot-longo">{v.label}</span><span className="rot-curto" aria-hidden="true">{v.curto ?? v.label}</span></NavLink>
             ))}
           </nav>
           <SeletorTema />
