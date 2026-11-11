@@ -1,7 +1,7 @@
 import { expect, test, type Page } from '@playwright/test';
 
 const TELAS = [
-  ['/', 'Visão geral da qualidade'], ['/estabilidade', 'Estabilidade do processo'], ['/defeitos', 'Defeitos'],
+  ['/', 'Visão geral da qualidade'], ['/fabrica', 'Fábrica ao vivo'], ['/estabilidade', 'Estabilidade do processo'], ['/defeitos', 'Defeitos'],
   ['/acoes', 'Ações corretivas'], ['/sobre', 'Sobre os dados'],
 ] as const;
 
@@ -18,23 +18,24 @@ for (const [rota, titulo] of TELAS) {
     const erros = vigiar(page);
     await page.goto(rota);
     await expect(page.getByRole('heading', { level: 1, name: titulo })).toBeVisible();
-    if (rota !== '/sobre') await expect(page.locator('.graf svg').first()).toBeVisible();
+    if (rota === '/fabrica') await expect(page.locator('.fab-cena canvas')).toBeVisible();
+    else if (rota !== '/sobre') await expect(page.locator('.graf svg').first()).toBeVisible();
     const sobra = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
     expect(sobra, 'rolagem horizontal').toBeLessThanOrEqual(1);
     expect(erros).toEqual([]);
   });
 }
 
-test('menu mostra as cinco seções sem precisar rolar', async ({ page }) => {
+test('menu mostra as seis seções sem precisar rolar', async ({ page }) => {
   await page.goto('/');
   const links = page.getByRole('navigation', { name: 'Seções do painel' }).getByRole('link');
-  await expect(links).toHaveCount(5);
-  for (let i = 0; i < 5; i++) {
+  await expect(links).toHaveCount(6);
+  for (let i = 0; i < 6; i++) {
     const box = (await links.nth(i).boundingBox())!;
     expect(box.x).toBeGreaterThanOrEqual(0);
     expect(box.x + box.width).toBeLessThanOrEqual(page.viewportSize()!.width + 1);
   }
-  await links.nth(3).click();
+  await links.nth(4).click();
   await expect(page).toHaveURL(/\/acoes$/);
 });
 

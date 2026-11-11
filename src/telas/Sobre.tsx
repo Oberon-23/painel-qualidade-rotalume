@@ -23,6 +23,7 @@ export default function Sobre() {
             <ul>
               <li><b>React + TypeScript</b> com Vite, rotas por tela e filtros que ficam salvos no navegador.</li>
               <li><b>Gráficos em SVG próprio</b>, sem biblioteca: o painel ficou menos da metade do tamanho e abre rápido no celular. As cores vêm do tema (claro, escuro ou automático) e as dicas funcionam com mouse, toque e teclado.</li>
+              <li><b>Fábrica ao vivo</b>: simulação 3D com three.js, carregada só nessa aba. Os controles de “e se” usam um modelo calibrado com os últimos 3 meses de cada linha.</li>
               <li>Identidade visual compartilhada com os outros painéis da Rotalume.</li>
               <li>As não conformidades com <b>Ver no SGQ</b> são as mesmas do <a href="https://sqgrotalume.vercel.app" target="_blank" rel="noopener">SGQ Rotalume</a>, o sistema onde elas são tratadas: o painel mostra o quadro geral e o SGQ, o tratamento de cada uma.</li>
               <li>Todos os cálculos rodam a partir dos dados brutos simulados: nada é digitado à mão.</li>
