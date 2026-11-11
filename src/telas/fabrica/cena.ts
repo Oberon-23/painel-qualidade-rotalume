@@ -388,7 +388,7 @@ export class Cena {
   }
   private focar(linha: number, estacao: number) {
     const alvo = new THREE.Vector3(XS[estacao], 1, zLinha(linha));
-    const dir = this.camera.position.clone().sub(this.controls.target).normalize().multiplyScalar(16);
+    const dir = this.camera.position.clone().sub(this.controls.target).normalize().multiplyScalar(26);
     this.controls.target.copy(alvo);
     this.camera.position.copy(alvo.clone().add(dir));
   }
