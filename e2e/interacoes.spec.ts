@@ -16,6 +16,8 @@ test('filtros mudam a manchete e ficam salvos', async ({ page }) => {
 test('dica do gráfico aparece com o mouse e com o teclado', async ({ page }) => {
   await page.goto('/');
   const graf = page.getByRole('img', { name: 'OEE mensal por linha' });
+  await graf.scrollIntoViewIfNeeded();
+  await page.waitForTimeout(400); // fim da animação de entrada
   const box = (await graf.boundingBox())!;
   await page.mouse.move(box.x + box.width * 0.6, box.y + box.height / 2);
   await expect(page.locator('.tt')).toBeVisible();
