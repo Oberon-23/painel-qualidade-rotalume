@@ -4,7 +4,15 @@
 
 > Dashboard interativo de qualidade industrial de uma fábrica **fictícia** (Rotalume Indústria), em React + TypeScript, sem backend. Traz OEE, Controle Estatístico de Processo (CEP) e um quadro de ações corretivas no padrão PDCA.
 
-![Visão geral](docs/img/qualidade_visao_geral.png)
+**[Abrir o painel →](https://painel-qualidade-rotalume.vercel.app)**
+
+## Em 30 segundos
+
+- **Problema:** antes de culpar a máquina ou o operador, a qualidade precisa saber se o processo está estável e qual defeito atacar primeiro.
+- **O que fiz:** um painel com OEE por linha, cartas de controle X̄-R com as regras de Western Electric, Pareto de defeitos, quadro de ações em PDCA e uma fábrica em 3D para testar cenários de "e se".
+- **O que ele mostra:** o diâmetro do eixo saiu de controle em 38 de 260 amostras, e o painel marca o Cpk como "não confiável" em vez de mostrar um número enganoso. Testes de cálculo e de ponta a ponta rodam a cada envio.
+
+![Demonstração: visão geral, estabilidade do processo e Pareto de defeitos](docs/img/demo.gif)
 
 ## O que o painel responde
 
